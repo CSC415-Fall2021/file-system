@@ -58,33 +58,45 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 	// Initialize VCB
 	printf("initializing VCB");
-	volumeControlBlock VCB;
-	memcpy(VCB.VCBsignature, testSignature, 4);
-	printf("VCB's signature is %s\n", VCB.VCBsignature);
-	VCB.numberOfBlocks = numberOfBlocks;
-	VCB.blockSize = blockSize;
-	VCB.location = 0; // Always starts at location 0
+	volumeControlBlock *VCB = malloc(blockSize);
+	memcpy(VCB->VCBsignature, testSignature, 4);
+	printf("VCB's signature is %s\n", VCB->VCBsignature);
+	VCB->numberOfBlocks = numberOfBlocks;
+	VCB->blockSize = blockSize;
+	VCB->location = 0; // Always starts at location 0
 	// freeSpaceBitMap will take in   
 	// [ (numberofBlocks which is same as number of bits)/ [(8 bits in an byte)(blockSize which is already in bytes)] ] +1
-	VCB.freeSpaceBitmapLocation = 1; 
-	VCB.freeSpaceBitmapEndLocation = ( numberOfBlocks/(8*blockSize) )+1 ;
-	VCB.rootStartLocation = VCB.freeSpaceBitmapEndLocation + 1;  // letting root start after VCB block spanning 10 blocks
-	VCB.freeSpaceStartLocation = VCB.rootStartLocation + 10; // free space will start after root's block
+	VCB->freeSpaceBitmapLocation = 1; 
+	VCB->freeSpaceBitmapEndLocation = ( numberOfBlocks/(8*blockSize) )+1 ;
+	VCB->rootStartLocation = VCB->freeSpaceBitmapEndLocation + 1;  // letting root start after VCB block spanning 10 blocks
+	VCB->freeSpaceStartLocation = VCB->rootStartLocation + 10; // free space will start after root's block
 	
-	// for our group to test and see where it starts and ends
-	printf("VCB's location is at block %d\n", VCB.location);
-	printf("freeSpace start is %d ending at %d \nroot starts at %d\nfreespace starts at %d\n", 
-	VCB.freeSpaceBitmapLocation,VCB.freeSpaceBitmapEndLocation, VCB.rootStartLocation, VCB.freeSpaceStartLocation);
 
-	freeSpace freeSpaceTracker[numberOfBlocks];
-	for(int i=0; i< VCB.freeSpaceStartLocation; i++){ // setting 0 for not free
+
+	// for our group to test and see where it starts and ends
+	printf("VCB's location is at block %d\n", VCB->location);
+	printf("freeSpace start is %d ending at %d \nroot starts at %d\nfreespace starts at %d\n", 
+	VCB->freeSpaceBitmapLocation,VCB->freeSpaceBitmapEndLocation, VCB->rootStartLocation, VCB->freeSpaceStartLocation);
+
+	freeSpace *freeSpaceTracker = malloc( ( (numberOfBlocks/(8*blockSize)) +1 )* blockSize ); // malloc uses bytes
+	printf("malloc'ed freespace is %ld bytes\n",  ( (numberOfBlocks/(8*blockSize)) +1 )* blockSize );
+	//freeSpace freeSpaceTracker[numberOfBlocks]; 
+	for(int i=0; i< VCB->freeSpaceStartLocation; i++){ // setting 0 for not free
 		freeSpaceTracker[i].free = 0;
 		//printf("free space location is i=%d\n", i);
 	}
-	for(int i = VCB.freeSpaceStartLocation; i < numberOfBlocks; i++){ // setting 1 for free
+	for(int i = VCB->freeSpaceStartLocation; i < numberOfBlocks; i++){ // setting 1 for free
 		freeSpaceTracker[i].free = 1;
 	}
-	printf("freespace ends at %d", numberOfBlocks-1);
+	printf("freespace ends at %ld\n", numberOfBlocks-1);
+
+
+	// Freeing malloced items
+	free(VCB);
+	VCB = NULL;
+	free(freeSpaceTracker);
+	freeSpaceTracker = NULL;
+	printf("done using free for VCB and freeSpaceTracker\n");
 
 	return 0;
 	}
