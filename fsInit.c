@@ -59,6 +59,12 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	// Initialize VCB
 	printf("initializing VCB");
 	volumeControlBlock *VCB = malloc(blockSize);
+
+	// need to do LBAread(); here to check VCB's signature
+
+
+
+	// if VCB signature doesn't match we need to intialize
 	memcpy(VCB->VCBsignature, testSignature, 4);
 	printf("VCB's signature is %s\n", VCB->VCBsignature);
 	VCB->numberOfBlocks = numberOfBlocks;
