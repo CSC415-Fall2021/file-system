@@ -24,7 +24,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 
-#define rootBlockSize 10
+#define rootBlockSize 10 // number of blocks root contains
 
 typedef struct volumeControlBlock{
 		char VCBsignature[100];
