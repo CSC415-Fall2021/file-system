@@ -24,6 +24,7 @@
 #include "fsLow.h"
 #include "mfs.h"
 
+#define rootBlockSize 10
 
 typedef struct volumeControlBlock{
 		char VCBsignature[100];
@@ -42,10 +43,31 @@ typedef struct directoryEntry{
 	char name[100];
 }directoryEntry;
 
-typedef struct freeSpace{ // might not need this struct, maybe just a helper function to init entry to free to be true
+typedef struct freeSpace{ 
 	unsigned free:1;
 }freeSpace;
 
+// seperate file for freespace
+typedef struct freeSpace{ 
+	int numberOfBlocks;
+	int blockSize;
+	unsigned free:1;
+}freeSpace;
+
+freeSpace * freeSpaceTracker;
+void initFreeSpace(numberOfBlocks, blockSize, bitMapStartLocation){
+	freeSpaceTracker = malloc(  ((numberOfBlocks/(8*blockSize))  +1) * blockSize );
+	for(int i=0; i< numberOfBlocks; i++){ // setting 0 for not free
+		freeSpaceTracker[i].free=1;
+	}
+}
+
+void updateFreeSpace(startingBlock, endingBlock, bitMapStartLocation, blockSize, numberOfBlocks){
+	for(int i= startingBlock; i< endingBlock; i++){
+		freeSpaceTracker[i].free=0;
+	}
+	LBAwrite(freeSpaceTracker, ((numberOfBlocks/(8*blockSize))  +1), bitMapStartLocation);
+}
 
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
@@ -73,9 +95,9 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	// freeSpaceBitMap will take in   
 	// [ (numberofBlocks which is same as number of bits)/ [(8 bits in an byte)(blockSize which is already in bytes)] ] +1
 	VCB->freeSpaceBitmapLocation = 1; 
-	VCB->freeSpaceBitmapEndLocation = ( numberOfBlocks/(8*blockSize) )+1 ;
+	VCB->freeSpaceBitmapEndLocation = ( numberOfBlocks/(8*blockSize) )+1 ; // 19531/(8 * 512)   +1 
 	VCB->rootStartLocation = VCB->freeSpaceBitmapEndLocation + 1;  // letting root start after VCB block spanning 10 blocks
-	VCB->freeSpaceStartLocation = VCB->rootStartLocation + 10; // free space will start after root's block
+	VCB->freeSpaceStartLocation = VCB->rootStartLocation + rootBlockSize; // free space will start after root's block
 	
 
 
@@ -87,6 +109,7 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	freeSpace *freeSpaceTracker = malloc( ( (numberOfBlocks/(8*blockSize)) +1 )* blockSize ); // malloc uses bytes
 	printf("malloc'ed freespace is %ld bytes\n",  ( (numberOfBlocks/(8*blockSize)) +1 )* blockSize );
 	//freeSpace freeSpaceTracker[numberOfBlocks]; 
+	
 	for(int i=0; i< VCB->freeSpaceStartLocation; i++){ // setting 0 for not free
 		freeSpaceTracker[i].free = 0;
 		//printf("free space location is i=%d\n", i);
