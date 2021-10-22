@@ -31,6 +31,8 @@ typedef struct volumeControlBlock{
 		int blockSize;
 		int location;
 		int rootStartLocation;
+		int freeSpaceBitmapLocation;
+		int freeSpaceBitmapEndLocation;
 		int freeSpaceStartLocation;
 }volumeControlBlock;
 		
@@ -57,21 +59,32 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	// Initialize VCB
 	printf("initializing VCB");
 	volumeControlBlock VCB;
-	memcpy(VCB.VCBsignature, testSignature, strlen(testSignature));
+	memcpy(VCB.VCBsignature, testSignature, 4);
 	printf("VCB's signature is %s\n", VCB.VCBsignature);
 	VCB.numberOfBlocks = numberOfBlocks;
 	VCB.blockSize = blockSize;
 	VCB.location = 0; // Always starts at location 0
-	VCB.rootStartLocation = 1;  // letting root start after VCB block spanning 10 blocks
-	VCB.freeSpaceStartLocation = 10; // free space will start after root's block
+	// freeSpaceBitMap will take in   
+	// [ (numberofBlocks which is same as number of bits)/ [(8 bits in an byte)(blockSize which is already in bytes)] ] +1
+	VCB.freeSpaceBitmapLocation = 1; 
+	VCB.freeSpaceBitmapEndLocation = ( numberOfBlocks/(8*blockSize) )+1 ;
+	VCB.rootStartLocation = VCB.freeSpaceBitmapEndLocation + 1;  // letting root start after VCB block spanning 10 blocks
+	VCB.freeSpaceStartLocation = VCB.rootStartLocation + 10; // free space will start after root's block
 	
+	// for our group to test and see where it starts and ends
+	printf("VCB's location is at block %d\n", VCB.location);
+	printf("freeSpace start is %d ending at %d \nroot starts at %d\nfreespace starts at %d\n", 
+	VCB.freeSpaceBitmapLocation,VCB.freeSpaceBitmapEndLocation, VCB.rootStartLocation, VCB.freeSpaceStartLocation);
+
 	freeSpace freeSpaceTracker[numberOfBlocks];
 	for(int i=0; i< VCB.freeSpaceStartLocation; i++){ // setting 0 for not free
 		freeSpaceTracker[i].free = 0;
+		//printf("free space location is i=%d\n", i);
 	}
 	for(int i = VCB.freeSpaceStartLocation; i < numberOfBlocks; i++){ // setting 1 for free
 		freeSpaceTracker[i].free = 1;
 	}
+	printf("freespace ends at %d", numberOfBlocks-1);
 
 	return 0;
 	}
