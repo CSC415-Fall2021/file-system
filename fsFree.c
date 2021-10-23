@@ -18,6 +18,8 @@
 //initialize the free space
 int initFreeSpace(char *bitMapBuffer)
 {
+    printf("[debug] strlen(bitMapBuffer) = %ld\n", strlen(bitMapBuffer));
+
     int startLocation = -1; //still need to adjust
     for (int i = 0; i < 6; i++)
     {
