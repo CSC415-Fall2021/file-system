@@ -14,7 +14,6 @@
 *
 **************************************************************/
 
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -24,17 +23,17 @@
 #include "fsLow.h"
 #include "mfs.h"
 
+//test
 
-int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
-	{
-	printf ("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
+int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
+{
+	printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	/* TODO: Add any code you need to initialize your file system. */
 
 	return 0;
-	}
-	
-	
-void exitFileSystem ()
-	{
-	printf ("System exiting\n");
-	}
+}
+
+void exitFileSystem()
+{
+	printf("System exiting\n");
+}
