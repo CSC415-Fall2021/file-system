@@ -12,54 +12,102 @@
 *
 **************************************************************/
 
-#include <string.h>
 #include "fsFree.h"
+#include "fsLow.h"
 
-//initialize the free space
-int initFreeSpace(char *bitMapBuffer)
+int setBitUsed(int *array, int bitIndex);
+int setBitFree(int *array, int bitIndex);
+int checkBitUsed(int *array, int bitIndex);
+
+//return positive num -> success, -1 -> failed
+int initFreeSpace(int blockSize)
 {
-    printf("[debug] strlen(bitMapBuffer) = %ld\n", strlen(bitMapBuffer));
+    printf("[debug] inside initFreeSpace...\n");
 
-    int startLocation = -1; //still need to adjust
+    //malloc space for bitmap
+    int *bitMap = malloc(5 * blockSize);
+
+    //mark first 6 bits to used: 0 -> VCB, 1~5 -> bitMap
     for (int i = 0; i < 6; i++)
     {
-        bitMapBuffer[i] = 0x00; //for VCB and bit map
-    }
-
-    for (int i = 6; i < strlen(bitMapBuffer); i++)
-    {
-        bitMapBuffer[i] = 0x01;
-    }
-}
-
-//allocate
-int getFreeSpace(char *bitMapBuffer, int numOfBlocks)
-{
-    int startLocation = -1;
-    for (int i = 0; i < strlen(bitMapBuffer); i++)
-    {
-        if (bitMapBuffer[i] & 0X01)
+        if (setBitUsed(bitMap, i) != 1)
         {
-            printf("[debug] found free space!\n");
-            startLocation = i;
-            for (int j = 1; j < numOfBlocks; j++)
-            {
-                printf("[debug] double checking the rest of the blocks...\n");
-                if (bitMapBuffer[++i] & 0x01)
-                {
-                    printf("[debug] the rest is not free...\n");
-                    i = ++startLocation; //to keep finding next avaliable
-                    startLocation = -1;  //set to the default
-                    break;
-                }
-            }
+            printf("[ERROR] setBitUsed() failed...\n");
+            return -1;
+        };
+    }
+
+    //mark rest to be free: 2442 because it's the actual size we have
+    for (int i = 6; i < 2442; i++)
+    {
+        if (setBitFree(bitMap, i) != 1)
+        {
+            printf("[ERROR] setBitFree() failed...\n");
+            return -1;
         }
     }
 
-    return startLocation;
+    //mark the the extra bits to used
+    for (int i = 2442; i < 2560; i++)
+    {
+        if (setBitUsed(bitMap, i) != 1)
+        {
+            printf("[ERROR] setBitUsed() failed...\n");
+            return -1;
+        }
+    }
+
+    //write into disk
+    LBAwrite(bitMap, 5, 1);
+
+    //return the starting block
+    return 1;
 }
 
-//release
-int releaseFreeSpace(char *bitMapBuffer, int numOfBlocks, int position)
+int allocateFreeSpace(int blockCount)
 {
+}
+
+//[TBD] release the free space
+int releaseFreeSpace()
+{
+}
+
+//Some helper functions
+
+//return 1 -> success, -1 -> failed
+int setBitUsed(int *array, int bitIndex)
+{
+    int arrayIndex = bitIndex / 32;
+    int arrayPosition = bitIndex % 32;
+    unsigned int flag = 1;
+    flag = flag << arrayPosition;
+    array[arrayIndex] = array[arrayIndex] | flag;
+
+    //double check if we set the bit successfully and return result
+    return checkBitUsed(array, bitIndex);
+}
+
+//return 1 -> success, -1 -> failed
+int setBitFree(int *array, int bitIndex)
+{
+    int arrayIndex = bitIndex / 32;
+    int arrayPosition = bitIndex % 32;
+    unsigned int flag = 1;
+    flag = flag << arrayPosition;
+    flag = ~flag;
+    array[arrayIndex] = arrayIndex * flag;
+    return (checkBitUsed(array, bitIndex) * -1);
+}
+
+//return 1-> used, -1 -> free
+int checkBitUsed(int *array, int bitIndex)
+{
+    int arrayIndex = bitIndex / 32;
+    int arrayPosition = bitIndex % 32;
+    unsigned int flag = 1;
+    flag = flag << arrayPosition;
+    if (array[arrayIndex] & flag)
+        return 1;
+    return -1;
 }

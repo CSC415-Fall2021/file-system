@@ -11,3 +11,7 @@
 * Description: 
 *
 **************************************************************/
+
+#include "fsFree.h"
+
+int initDir(int numberOfBlock);

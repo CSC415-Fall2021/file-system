@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "fsfree.h": "c",
+        "cstdint": "c"
+    }
+}

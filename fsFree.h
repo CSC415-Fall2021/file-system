@@ -12,11 +12,14 @@
 *
 **************************************************************/
 
-//init
-int initFreeSpace(char *bitMapBuffer);
+//initialize the free space
+//returns the starting block number of bit map
+//return value: positive num -> success, -1 -> failed
+int initFreeSpace(int blockSize);
 
-//allocate
-int getFreeSpace(char *bitMapBuffer, int numOfBlocks);
+//find the free space for the user with given number of block
+//returns the starting  block number of free space
+int allocateFreeSpace(int blockCount);
 
-//release
-int releaseFreeSpace(char *bitMapBuffer, int numOfBlocks, int position);
+//[TBD] release the free space
+int releaseFreeSpace();
