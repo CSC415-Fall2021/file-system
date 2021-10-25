@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "fsfree.h": "c",
-        "cstdint": "c"
+        "cstdint": "c",
+        "string.h": "c"
     }
 }

@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
+#include <stdbool.h>
 
 #include "b_io.h"
 
@@ -63,6 +64,20 @@ typedef struct
 	int location;
 	int blockRemains;
 } freeSpaceManager;
+
+typedef struct
+{
+
+} DEinfo;
+
+typedef struct
+{
+	char name[100];
+	int size;
+	int pointingLocation;
+	bool isDir;
+	DEinfo *dei;
+} DE;
 
 typedef struct
 {
