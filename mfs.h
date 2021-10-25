@@ -59,9 +59,10 @@ typedef struct
 {
 	int blockSize;
 	int totalOfBlock;
-	int *bitMap;
+	unsigned char *bitMap;
 	int location;
-	int blockRemains;
+	int usedCount; //for our purpose
+	int freeCount; //for our purpose
 } freeSpaceManager;
 
 typedef struct

@@ -42,7 +42,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, freeSpaceManager *
 
     //allocate blocks from free space
     int location = allocateFreeSpace(manager, numOfBlockNeeded);
-    printf("[debug] got location at %d\n", location);
+    printf("[debug] got free location at %d\n", location);
     if (location == -1)
     {
         printf("[ERROR] Line 47 : fsDir.c allocateFreeSpace() failed...\n");

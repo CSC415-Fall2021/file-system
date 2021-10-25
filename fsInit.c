@@ -43,13 +43,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	freeSpaceManager *manager = malloc(sizeof(freeSpaceManager));
 	manager->totalOfBlock = numberOfBlocks;
 	manager->blockSize = blockSize;
-	manager->blockRemains = numberOfBlocks;
 	manager->location = 1;
+	manager->usedCount = 0;
+	manager->freeCount = numberOfBlocks;
+	manager->bitMap = malloc(5 * blockSize);
 
 	if (match == 0)
 	{
 		//load up the bitmap to our memory and set the location to 1
-		LBAread(manager->bitMap, 5, manager->location);
+		reloadFreeSpace(manager);
 	}
 
 	//if not match, initialize the volume
@@ -57,7 +59,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	{
 		printf("[debug] not our volume!\n");
 		//init free space
-		manager->bitMap = malloc(5 * blockSize);
 		int bitMapLocation = initFreeSpace(manager);
 
 		//init root

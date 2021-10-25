@@ -19,6 +19,9 @@
 //return value: positive num -> success, -1 -> failed
 int initFreeSpace(freeSpaceManager *manager);
 
+//returns the number of blocks being read
+int reloadFreeSpace(freeSpaceManager *manager);
+
 //find the free space for the user with given number of block
 //returns the starting  block number of free space
 int allocateFreeSpace(freeSpaceManager *manager, int blockCount);
