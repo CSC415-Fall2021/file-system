@@ -18,17 +18,19 @@
 int setBitUsed(int *array, int bitIndex);
 int setBitFree(int *array, int bitIndex);
 int checkBitUsed(int *array, int bitIndex);
-void printManager(freeSpaceManager manager);
+void printManager(freeSpaceManager *manager);
+
+//bit map: 1 -> used, 0 -> free
 
 //return positive num -> success, -1 -> failed
-int initFreeSpace(freeSpaceManager manager)
+int initFreeSpace(freeSpaceManager *manager)
 {
     printf("[debug] inside initFreeSpace...\n");
 
     //mark first 6 bits to used: 0 -> VCB, 1~5 -> bitMap
     for (int i = 0; i < 6; i++)
     {
-        if (setBitUsed(manager.bitMap, i) != 1)
+        if (setBitUsed(manager->bitMap, i) != 1)
         {
             printf("[ERROR] setBitUsed() failed...\n");
             return -1;
@@ -36,14 +38,14 @@ int initFreeSpace(freeSpaceManager manager)
     }
 
     //update the blockRemains
-    manager.blockRemains -= 6;
+    manager->blockRemains -= 6;
 
     //mark rest to be free: 2442 because it's the actual size we have
     for (int i = 6; i < 2442; i++)
     {
-        if (setBitFree(manager.bitMap, i) != 1)
+        if (setBitFree(manager->bitMap, i) != 1)
         {
-            printf("[ERROR] setBitFree() failed...\n");
+            printf("[ERROR] setBitFree() failed at %d...\n", i);
             return -1;
         }
     }
@@ -51,7 +53,7 @@ int initFreeSpace(freeSpaceManager manager)
     //mark the the extra bits to used
     for (int i = 2442; i < 2560; i++)
     {
-        if (setBitUsed(manager.bitMap, i) != 1)
+        if (setBitUsed(manager->bitMap, i) != 1)
         {
             printf("[ERROR] setBitUsed() failed...\n");
             return -1;
@@ -59,10 +61,10 @@ int initFreeSpace(freeSpaceManager manager)
     }
 
     //write into disk
-    LBAwrite(manager.bitMap, 5, 1);
+    LBAwrite(manager->bitMap, 5, 1);
 
     //update location
-    manager.location = 1;
+    manager->location = 1;
 
     //[debug] print out manager
     printManager(manager);
@@ -71,37 +73,41 @@ int initFreeSpace(freeSpaceManager manager)
     return 1;
 }
 
-int allocateFreeSpace(freeSpaceManager manager, int blockCount)
+int allocateFreeSpace(freeSpaceManager *manager, int blockCount)
 {
     int location = -1;
     //check if free space has enough block to allocate
-    if (manager.blockRemains < blockCount)
+    if (manager->blockRemains < blockCount)
     {
         printf("[ERROR] not enough space to allocate in free space...\n");
         return location;
     }
 
     //loop through bitmap and use checkBitUsed to find free space
-    for (int i = 0; i < manager.totalOfBlock; i++)
+    for (int i = 0; i < manager->totalOfBlock; i++)
     {
-        if (checkBitUsed(manager.bitMap, i) == -1)
+        printf("[debug] i = %d\n", i);
+        if (checkBitUsed(manager->bitMap, i) == -1)
         {
+            printf("[debug] found free bits! ready to check rest!\n");
             location = i;
             for (int j = i; j <= blockCount; j++)
             {
-                if (checkBitUsed(manager.bitMap, j) == 1)
+                if (checkBitUsed(manager->bitMap, j) == 1)
                 {
+                    printf("[debug] not free... find the next one\n");
                     location = -1;
                     break;
                 }
             }
+            break;
         }
     }
 
     //update bit map
     for (int i = location; i <= blockCount; i++)
     {
-        if (setBitUsed(manager.bitMap, i) == -1)
+        if (setBitUsed(manager->bitMap, i) == -1)
         {
             printf("[ERROR] setBitUsed() failed...\n");
             return -1;
@@ -109,10 +115,10 @@ int allocateFreeSpace(freeSpaceManager manager, int blockCount)
     }
 
     //update blockRemains
-    manager.blockRemains -= blockCount;
+    manager->blockRemains -= blockCount;
 
     //update disk
-    LBAwrite(manager.bitMap, 5, manager.location);
+    LBAwrite(manager->bitMap, 5, manager->location);
 
     //[debug] print out manager
     printManager(manager);
@@ -144,11 +150,14 @@ int setBitUsed(int *array, int bitIndex)
 int setBitFree(int *array, int bitIndex)
 {
     int arrayIndex = bitIndex / 32;
+    //if (bitIndex == 65)
+    //printf("[debug] arrayIndex: %d\n", arrayIndex);
     int arrayPosition = bitIndex % 32;
     unsigned int flag = 1;
     flag = flag << arrayPosition;
     flag = ~flag;
-    array[arrayIndex] = arrayIndex * flag;
+    array[arrayIndex] = arrayIndex & flag;
+    //printf("[debug]: %d\n", checkBitUsed(array, bitIndex) * -1);
     return (checkBitUsed(array, bitIndex) * -1);
 }
 
@@ -165,9 +174,9 @@ int checkBitUsed(int *array, int bitIndex)
 }
 
 //print out manager's data
-void printManager(freeSpaceManager manager)
+void printManager(freeSpaceManager *manager)
 {
-    printf("[debug] --- Manager Data ---\n");
-    printf("- blockSize: %d\n- totalOfBlock: %d\n- nextFreeSpace: %d\n", manager.blockSize, manager.totalOfBlock, manager.nextFreeSpace);
-    printf("- location: %d\n- blockRemains: %d\n", manager.location, manager.blockRemains);
+    printf("--- Manager Data ---\n");
+    printf("- blockSize: %d\n- totalOfBlock: %d\n", manager->blockSize, manager->totalOfBlock);
+    printf("- location: %d\n- blockRemains: %d\n", manager->location, manager->blockRemains);
 }

@@ -59,7 +59,6 @@ typedef struct
 {
 	int blockSize;
 	int totalOfBlock;
-	int nextFreeSpace;
 	int *bitMap;
 	int location;
 	int blockRemains;
@@ -86,8 +85,7 @@ typedef struct
 	int blockSize;
 	int location;
 	int bitMapLocation;
-	int bitMapEndLocation;
-	int rootStartLocation;
+	int rootLocation;
 	int freeSpaceStartLocation;
 } VCB;
 
