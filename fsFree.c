@@ -16,10 +16,14 @@
 #include "fsLow.h"
 #include <string.h>
 
-int setBitUsed(char *array, int bitIndex);
-int setBitFree(char *array, int bitIndex);
-int checkBitUsed(char *array, int bitIndex);
+int setBitUsed(unsigned char *array, int bitIndex);
+int setBitFree(unsigned char *array, int bitIndex);
+int checkBitUsed(unsigned char *array, int bitIndex);
 void printManager(freeSpaceManager *manager);
+
+unsigned char *bitMap;
+unsigned char setArray[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+unsigned char clearArray[8] = {0x7F, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE};
 
 //bit map: 1 -> used, 0 -> free
 
@@ -154,25 +158,27 @@ int releaseFreeSpace()
 //Some helper functions
 
 //return 1 -> success, -1 -> failed
-int setBitUsed(char *array, int bitIndex)
+int setBitUsed(unsigned char *array, int bitIndex)
 {
-    printf("[debug] setting bit to used...\n");
-    array[bitIndex] = '1';
+    //printf("[debug] setting bit to used...\n");
+
+    array[bitIndex / 8] = array[bitIndex / 8] | setArray[bitIndex % 8];
 
     //double check if we set the bit successfully and return result
     return checkBitUsed(array, bitIndex);
 }
 
 //return 1 -> success, -1 -> failed
-int setBitFree(char *array, int bitIndex)
+int setBitFree(unsigned char *array, int bitIndex)
 {
-    printf("[debug] setting bit to free...\n");
-    array[bitIndex] = '0';
+    //printf("[debug] setting bit to free...\n");
+    array[bitIndex / 8] = array[bitIndex / 8] & clearArray[bitIndex % 8];
+
     return (checkBitUsed(array, bitIndex) * -1);
 }
 
 //return 1-> used, -1 -> free
-int checkBitUsed(char *array, int bitIndex)
+int checkBitUsed(unsigned char *array, int bitIndex)
 {
     if (array[bitIndex] == '1')
     {

@@ -61,22 +61,20 @@ typedef struct
 	int totalOfBlock;
 	unsigned char *bitMap;
 	int location;
-	int usedCount; //for our purpose
-	int freeCount; //for our purpose
+	int lastAllocBlock; //temp
+	int usedCount;		//for our purpose
+	int freeCount;		//for our purpose
 } freeSpaceManager;
 
 typedef struct
 {
-
-} DEinfo;
-
-typedef struct
-{
-	char name[100];
+	char name[64];
 	int size;
 	int pointingLocation;
 	bool isDir;
-	DEinfo *dei;
+	time_t createTime;
+	time_t lastModTime;
+	time_t lastAccessTime;
 } DE;
 
 typedef struct
