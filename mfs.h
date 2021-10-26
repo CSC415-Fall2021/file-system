@@ -1,7 +1,9 @@
 /**************************************************************
-* Class:  CSC-415
-* Name: Professor Bierman
-* Student ID: N/A
+* Class:  CSC-415-02&03  Fall 2021
+* Names: Tun-Ni Chiang, Jiasheng Li, Christopher Ling, Shixin Wang
+* Student IDs: 921458769, 916473043, 918266861, 918663491
+* GitHub Name: tunni-chiang, jiasheng-li, dslayer1392, uyguyguy
+* Group Name: Bug Master
 * Project: Basic File System
 *
 * File: mfs.h
