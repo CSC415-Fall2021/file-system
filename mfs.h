@@ -85,7 +85,9 @@ typedef struct
 	int location;
 	int bitMapLocation;
 	int rootLocation;
+	int rootSize;
 	int freeSpaceStartLocation;
+	int nextFreeBlock;
 } VCB;
 
 // Key directory functions

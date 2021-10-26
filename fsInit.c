@@ -27,51 +27,46 @@
 
 #define rootDECount 50 //number of blocks root contains
 
+VCB *vcb;
+
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {
 	printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
 	//1. check if it's our volume
 	//   malloc space for VCB
-	VCB *vcb = malloc(blockSize);
+	vcb = malloc(blockSize);
 	//   read the block to malloc space
 	LBAread(vcb, 1, 0);
 	//   check signature
 	int match = strcmp(vcb->signature, "101");
 
-	//setting up the free space management.
-	//only bitmap will be different
-	freeSpaceManager *manager = malloc(sizeof(freeSpaceManager));
-	manager->totalOfBlock = numberOfBlocks;
-	manager->blockSize = blockSize;
-	manager->location = 1;
-	manager->usedCount = 0;
-	manager->freeCount = numberOfBlocks;
-	manager->bitMap = malloc(5 * blockSize);
-
 	if (match == 0)
 	{
 		//load up the bitmap to our memory and set the location to 1
-		reloadFreeSpace(manager);
+		reloadFreeSpace(vcb, blockSize);
 	}
 
 	//if not match, initialize the volume
 	else
 	{
 		printf("[debug] not our volume!\n");
-		//init free space
-		int bitMapLocation = initFreeSpace(manager);
 
-		//init root
-		int rootLocation = createDir(0, rootDECount, blockSize, manager); //not sure bout passing in 0...
-
-		//init VCB
+		//init first half of VCB
 		strcpy(vcb->signature, "101");
 		vcb->numberOfBlocks = numberOfBlocks;
 		vcb->blockSize = blockSize;
 		vcb->location = 0;
+
+		//init free space
+		int bitMapLocation = initFreeSpace(vcb, blockSize);
+
+		//init root
+		int rootLocation = createDir(0, rootDECount, blockSize, vcb); //not sure bout passing in 0...
+
+		//init rest of the data of VCB
 		vcb->bitMapLocation = bitMapLocation;
 		vcb->rootLocation = rootLocation;
-		vcb->freeSpaceStartLocation = rootLocation + 12; //hardcoded
+		vcb->freeSpaceStartLocation = rootLocation + vcb->rootSize;
 
 		//write into disk
 		LBAwrite(vcb, 1, 0);
@@ -83,4 +78,5 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 void exitFileSystem()
 {
 	printf("System exiting\n");
+	LBAwrite(vcb, 1, 0);
 }

@@ -18,7 +18,7 @@
 
 void printDEInfo(DE de);
 
-int createDir(int parentLocation, int DEcount, int blockSize, freeSpaceManager *manager)
+int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
 {
     //malloc space for directory
     //  determine how much space we need for desired DEcount
@@ -34,6 +34,9 @@ int createDir(int parentLocation, int DEcount, int blockSize, freeSpaceManager *
     printf("[debug] DE size is %ld\n", sizeof(DE));
     DE *directory = (DE *)malloc(mallocSize);
 
+    //update root block size
+    vcb->rootSize = numOfBlockNeeded;
+
     //loop through the directory and init each DE struct
     for (int i = 0; i < DEcount; i++)
     {
@@ -47,7 +50,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, freeSpaceManager *
     }
 
     //allocate blocks from free space
-    int location = allocateFreeSpace(manager, numOfBlockNeeded);
+    int location = allocateFreeSpace(vcb, numOfBlockNeeded);
     printf("[debug] got free location at %d\n", location);
     if (location == -1)
     {

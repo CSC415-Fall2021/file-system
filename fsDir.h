@@ -13,8 +13,7 @@
 **************************************************************/
 
 #include "fsFree.h"
-#include "fsFree.h"
 
 //create directory, returns the starting block
 //return value: positive num -> success, -1 -> failed
-int createDir(int parentLocation, int DEcount, int blockSize, freeSpaceManager *manager);
+int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb);
