@@ -6,7 +6,7 @@
 * Group Name: Bug Master
 * Project: Basic File System
 *
-* File: fsFree.h
+* File: fsInit.c
 *
 * Description: Main driver for file system assignment.
 *
