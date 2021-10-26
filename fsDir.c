@@ -15,6 +15,8 @@
 #include "fsDir.h"
 #include "fsLow.h"
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 void printDEInfo(DE de);
 

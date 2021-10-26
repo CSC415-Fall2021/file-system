@@ -33,6 +33,8 @@
 #include "fsFree.h"
 #include "fsLow.h"
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 //[Some helper functions]
 //Still developing checkBitUsed
