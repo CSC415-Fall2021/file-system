@@ -20,8 +20,8 @@
 
 #include "fsLow.h"
 #include "mfs.h"
-#include "fsFree.c"
-#include "fsDir.c"
+#include "fsFree.h"
+#include "fsDir.h"
 
 #define rootDECount 50 //number of blocks root contains
 
