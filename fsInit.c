@@ -25,29 +25,32 @@
 
 #define rootDECount 50 //number of blocks root contains
 
+//since we are using it in different functions, we declared it globally
 VCB *vcb;
 
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {
-	printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
-	//1. check if it's our volume
-	//   malloc space for VCB
+	//printf("Initializing File System with %ld blocks with a block size of %ld\n",
+	//numberOfBlocks, blockSize);
+
+	//[Step 1] check if it's our volume
+	//malloc space for VCB
 	vcb = malloc(blockSize);
-	//   read the block to malloc space
+	//read the block to malloc space
 	LBAread(vcb, 1, 0);
-	//   check signature
+	//check signature
 	int match = strcmp(vcb->signature, "101");
 
+	//[Step 2A] If match, load up the bitmap to our memory and set the location to 1
 	if (match == 0)
 	{
-		//load up the bitmap to our memory and set the location to 1
 		reloadFreeSpace(vcb, blockSize);
 	}
 
-	//if not match, initialize the volume
+	//[Step 2B] If not match, initialize the volume.
 	else
 	{
-		printf("[debug] not our volume!\n");
+		//printf("[debug] not our volume!\n");
 
 		//init first half of VCB
 		strcpy(vcb->signature, "101");
@@ -67,7 +70,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb->freeSpaceStartLocation = rootLocation + vcb->rootSize;
 
 		//write into disk
-		LBAwrite(vcb, 1, 0);
+		if (LBAwrite(vcb, 1, 0) != 1)
+		{
+			printf("[ERROR] LBAwrite() failed...\n");
+		}
 	}
 
 	return 0;
@@ -76,5 +82,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 void exitFileSystem()
 {
 	printf("System exiting\n");
-	LBAwrite(vcb, 1, 0);
+	if (LBAwrite(vcb, 1, 0) != 1)
+	{
+		printf("[ERROR] LBAwrite() failed...\n");
+	}
 }

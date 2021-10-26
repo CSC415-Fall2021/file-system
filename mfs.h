@@ -12,6 +12,7 @@
 *	your filesystem.
 *
 **************************************************************/
+
 #ifndef _MFS_H
 #define _MFS_H
 #include <sys/types.h>

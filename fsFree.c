@@ -55,7 +55,7 @@ unsigned char clearArray[8] = {0x7F, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE};
 //(negative return value feature will be updated...)
 int initFreeSpace(VCB *vcb, int blockSize)
 {
-    printf("[debug] inside initFreeSpace...\n");
+    //printf("[debug] inside initFreeSpace...\n");
 
     //[Step 1] init the data
     //- bitmap
@@ -130,7 +130,7 @@ int reloadFreeSpace(VCB *vcb, int blockSize)
 //return value: positive num -> success, -1 -> failed
 int allocateFreeSpace(VCB *vcb, int blockCount)
 {
-    printf("[debug] inside allocateFreeSpace...\n");
+    //printf("[debug] inside allocateFreeSpace...\n");
 
     //[Step 1] get the free space location from vcb field
     int location = vcb->nextFreeBlock;
