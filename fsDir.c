@@ -39,7 +39,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
     //DE in mallocSize)
     DEcount += (mallocSize - sizeOfSpace) / sizeof(DE);
     //printf("[debug] root will have %d DE in total.\n", DEcount);
-    //printf("[debug] DE size is %ld\n", sizeof(DE));
+    //printf("[debug] root size is %ld\n", sizeof(DE) * DEcount);
     //malloc with mallocSize
     DE *directory = (DE *)malloc(mallocSize);
 
