@@ -82,7 +82,7 @@ typedef struct
 
 typedef struct
 {
-	char signature[100];
+	char signature[64];
 	int numberOfBlocks;
 	int blockSize;
 	int location;
