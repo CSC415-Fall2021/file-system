@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void printDEInfo(DE de);
+void printDEInfo(DE *de);
 
 int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
 {
@@ -51,6 +51,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
     {
         strcpy(directory[i].name, "\0");
         directory[i].size = 0;
+        directory[i].DEcount = 0;
         directory[i].pointingLocation = 0;
         directory[i].isDir = 0;
         directory[i].createTime = 0;
@@ -109,9 +110,80 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
     return location;
 }
 
-void printDEInfo(DE de)
+//job: tokenize the path into an array of token
+//then return back the working directory through param,
+//and check validation of given condition
+//returns 0 means invalid, 1 means valid
+bool pathParser(char *path, unsigned char condition, DE *tempWorking)
+{
+
+    //Step 0: declare needed data
+    bool found = 0;
+    char **tokens = malloc(strlen(path));
+
+    //Step 1: check relative or absolute
+    if (path[0] != '/')
+    {
+        printf("[debug] relative path\n");
+        tempWorking = cwd;
+        printDEInfo(tempWorking);
+    }
+
+    //Step 2: tokenize
+    int tokenCount = 0;
+    char *theRest = path;
+    char *token = strtok_r(path, "/", &theRest);
+    while (token != NULL)
+    {
+        tokens[tokenCount++] = token;
+        token = strtok_r(NULL, "/", &theRest);
+    }
+
+    //Step 3: find each token (second last)
+    for (int tokensIndex = 0; tokensIndex < tokenCount - 1; tokensIndex++)
+    {
+        for (int dirIndex = 2; dirIndex < tempWorking[0].DEcount; dirIndex++)
+        {
+            if (strcmp(tempWorking[dirIndex].name, tokens[tokensIndex]) == 0)
+            {
+                //TODO check return value
+                LBAread(tempWorking, tempWorking[dirIndex].pointingLocation, tempWorking[dirIndex].DEcount);
+                printf("[debug] now we are in %s\n", tempWorking[0].name);
+                printDEInfo(tempWorking);
+                found = 1; //true
+            }
+        }
+        if (!found)
+            return -1; //invalid
+        found = 0;     //reset to false
+    }
+
+    //Step 4: declare byte condition
+    unsigned char thisCondition;
+
+    //Step 5: check condition for last token
+    for (int dirIndex = 2; dirIndex < tempWorking[0].DEcount; dirIndex++)
+    {
+        if (strcmp(tempWorking[dirIndex].name, tokens[tokenCount - 1]) == 0)
+        {
+            if (tempWorking[dirIndex].isDir)
+                thisCondition = EXIST_DIR;
+            else
+                thisCondition = EXIST_FILE;
+            break;
+        }
+        thisCondition = NOT_EXIST;
+    }
+
+    //Step 6: check the validation
+    if (condition == thisCondition)
+        return 1;
+    return -1;
+}
+
+void printDEInfo(DE *de)
 {
     printf("--- DE info ---\n");
-    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de.name, de.size, de.pointingLocation);
-    printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de.isDir, ctime(&de.createTime), ctime(&de.lastModTime), ctime(&de.lastAccessTime));
+    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de->name, de->size, de->pointingLocation);
+    printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de->isDir, ctime(&de->createTime), ctime(&de->lastModTime), ctime(&de->lastAccessTime));
 }

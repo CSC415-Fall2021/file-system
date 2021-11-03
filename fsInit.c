@@ -64,6 +64,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		//init root
 		int rootLocation = createDir(0, rootDECount, blockSize, vcb); //not sure bout passing in 0...
 
+		//Read the root as current working directory
+		//TODO check return value
+		LBAread(cwd, rootLocation, rootDECount);
+
 		//init rest of the data of VCB
 		vcb->bitMapLocation = bitMapLocation;
 		vcb->rootLocation = rootLocation;

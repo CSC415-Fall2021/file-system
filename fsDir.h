@@ -13,7 +13,18 @@
 **************************************************************/
 
 #include "fsFree.h"
+#include "mfs.h"
 
-//create directory, returns the starting block
+#define NOT_EXIST 0x00000000
+#define EXIST_FILE 0x00000001
+#define EXIST_DIR 0x00000002
+
+//job: create directory, returns the starting block
 //return value: positive num -> success, -1 -> failed
 int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb);
+
+//job: tokenize the path into an array of token
+//then return back the working directory through param,
+//and check validation of given condition
+//returns 0 means invalid, 1 means valid
+bool pathParser(char *path, unsigned char condition, DE *tempWorking);

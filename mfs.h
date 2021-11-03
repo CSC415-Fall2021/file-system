@@ -60,19 +60,9 @@ typedef struct
 
 typedef struct
 {
-	int blockSize;
-	int totalOfBlock;
-	unsigned char *bitMap;
-	int location;
-	int lastAllocBlock; //temp
-	int usedCount;		//for our purpose
-	int freeCount;		//for our purpose
-} freeSpaceManager;
-
-typedef struct
-{
 	char name[64];
 	int size;
+	int DEcount;
 	int pointingLocation;
 	bool isDir;
 	time_t createTime;
@@ -92,6 +82,8 @@ typedef struct
 	int freeSpaceStartLocation;
 	int nextFreeBlock;
 } VCB;
+
+DE *cwd;
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);
