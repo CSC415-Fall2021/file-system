@@ -114,7 +114,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
 //then return back the working directory through param,
 //and check validation of given condition
 //returns 0 means invalid, 1 means valid
-bool pathParser(char *path, unsigned char condition, DE *tempWorking)
+int pathParser(char *path, unsigned char condition, DE *tempWorking)
 {
 
     //Step 0: declare needed data
