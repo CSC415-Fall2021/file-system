@@ -62,7 +62,6 @@ typedef struct
 {
 	char name[64];
 	int size;
-	int DEcount;
 	int pointingLocation;
 	bool isDir;
 	time_t createTime;
@@ -83,6 +82,8 @@ typedef struct
 	int nextFreeBlock;
 } VCB;
 
+int mf_blockSize;
+VCB *mfs_vcb;
 DE *cwd;
 
 // Key directory functions

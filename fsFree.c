@@ -42,20 +42,11 @@ int setBitUsed(unsigned char *array, int bitIndex);
 int setBitFree(unsigned char *array, int bitIndex);
 int checkBitUsed(unsigned char *array, int bitIndex);
 
-//bitmap: the unsiged char array for managing the free space management
-unsigned char *bitMap;
-
-//setArray & clearArray: for helper function's purpose
-unsigned char setArray[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
-unsigned char clearArray[8] = {0x7F, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE};
-
-//bit map: 1 -> used, 0 -> free
-
 //initialize the free space
 //returns the starting block number of bit map
 //return value: 1 -> success, -1 -> failed
 //(negative return value feature will be updated...)
-int initFreeSpace(VCB *vcb, int blockSize)
+int initFreeSpace(VCB *vcb)
 {
     //printf("[debug] inside initFreeSpace...\n");
 
@@ -63,9 +54,9 @@ int initFreeSpace(VCB *vcb, int blockSize)
     //- bitmap
     //- nextFreeBlock in vcb: to keep on track next available block
     //- totalOfActBit: total of actual bit
-    bitMap = malloc(5 * blockSize);
+    bitMap = malloc(5 * mf_blockSize);
     vcb->nextFreeBlock = 0;
-    int totalOfActBit = 5 * blockSize * 8;
+    int totalOfActBit = 5 * mf_blockSize * 8;
 
     //[Step 2] mark first 6 bits to used
     //- 0 for VCB
@@ -100,6 +91,8 @@ int initFreeSpace(VCB *vcb, int blockSize)
     //printf("[debug] ---------\n");
     //printf("- nextFreeBlock: %d\n", vcb->nextFreeBlock);
 
+    mfs_vcb = vcb;
+
     //[Step 7] return the starting block
     return 1;
 }
@@ -107,10 +100,11 @@ int initFreeSpace(VCB *vcb, int blockSize)
 //reload the bitmap and keep it in memory
 //returns the number of blocks being read
 //return value: positive num -> success, -1 -> failed
-int reloadFreeSpace(VCB *vcb, int blockSize)
+int reloadFreeSpace()
 {
     //[Step 1] init the data
-    bitMap = malloc(5 * blockSize);
+    bitMap = malloc(5 * mf_blockSize);
+    mfs_vcb = malloc(mf_blockSize);
 
     //[Step 2] read the block to memory
     int numOfBlockOfBitMap = LBAread(bitMap, 5, 1);
@@ -123,6 +117,8 @@ int reloadFreeSpace(VCB *vcb, int blockSize)
     //printf("[debug] ---------\n");
     //printf("- nextFreeBlock: %d\n", vcb->nextFreeBlock);
 
+    LBAread(mfs_vcb, 1, 0);
+
     //[Step 3] return the number of block being read
     return numOfBlockOfBitMap;
 }
@@ -130,12 +126,12 @@ int reloadFreeSpace(VCB *vcb, int blockSize)
 //find the free space for the user with given number of block
 //returns the starting  block number of free space
 //return value: positive num -> success, -1 -> failed
-int allocateFreeSpace(VCB *vcb, int blockCount)
+int allocateFreeSpace(int blockCount)
 {
     //printf("[debug] inside allocateFreeSpace...\n");
 
     //[Step 1] get the free space location from vcb field
-    int location = vcb->nextFreeBlock;
+    int location = mfs_vcb->nextFreeBlock;
     //printf("[debuggg] nextFreeBlock: %d\n", location);
 
     //[Step 2] from the location, flip number of blockCount bits to used
@@ -145,7 +141,7 @@ int allocateFreeSpace(VCB *vcb, int blockCount)
     }
 
     //[Step 3] update the nextFreeBlock field in VCB
-    vcb->nextFreeBlock += blockCount;
+    mfs_vcb->nextFreeBlock += blockCount;
 
     //[Step 4] write onto disk to update the bitmap
     if (LBAwrite(bitMap, 5, 1) != 5)

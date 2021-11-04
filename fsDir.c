@@ -18,9 +18,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void printDEInfo(DE *de);
+void printDEInfo(DE de);
 
-int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
+int createDir(int parentLocation)
 {
     //[Step 1] malloc space for directory
     //a. determine how much space we need for desired DEcount
@@ -29,25 +29,22 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
     //d. malloc with mallocSize
 
     //sizeOfSpace: what we think we need to allocate (not in block unit)
-    int sizeOfSpace = sizeof(DE) * DEcount;
+    int sizeOfSpace = sizeof(DE) * DefaultDECount;
     //numOfBlockNeeded: number of block to fit what we think we need to allocate
-    int numOfBlockNeeded = (sizeOfSpace / blockSize) + 1;
+    int numOfBlockNeeded = (sizeOfSpace / mf_blockSize) + 1;
     //printf("[debug] root will need %d blocks\n", numOfBlockNeeded);
     //mallocSize: what we will really allocate (based on numOfBlock)
-    int mallocSize = numOfBlockNeeded * blockSize;
+    int mallocSize = numOfBlockNeeded * mf_blockSize;
     //update the DE count if needed(when there's still space for more
     //DE in mallocSize)
-    DEcount += (mallocSize - sizeOfSpace) / sizeof(DE);
+    DefaultDECount += (mallocSize - sizeOfSpace) / sizeof(DE);
     //printf("[debug] root will have %d DE in total.\n", DEcount);
     //printf("[debug] DE size is %ld\n", sizeof(DE));
     //malloc with mallocSize
     DE *directory = (DE *)malloc(mallocSize);
 
-    //[Step 2] update root block size
-    vcb->rootSize = numOfBlockNeeded;
-
     //[Step 3] loop through the directory and init each DE struct
-    for (int i = 0; i < DEcount; i++)
+    for (int i = 0; i < DefaultDECount; i++)
     {
         strcpy(directory[i].name, "\0");
         directory[i].size = 0;
@@ -60,7 +57,7 @@ int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb)
     }
 
     //[Step 4] allocate blocks from free space
-    int location = allocateFreeSpace(vcb, numOfBlockNeeded);
+    int location = allocateFreeSpace();
     //printf("[debug] got free location at %d\n", location);
     if (location == -1)
     {
@@ -126,7 +123,7 @@ int pathParser(char *path, unsigned char condition, DE *tempWorking)
     {
         printf("[debug] relative path\n");
         tempWorking = cwd;
-        printDEInfo(tempWorking);
+        printDEInfo(tempWorking[0]);
     }
 
     //Step 2: tokenize
@@ -149,7 +146,7 @@ int pathParser(char *path, unsigned char condition, DE *tempWorking)
                 //TODO check return value
                 LBAread(tempWorking, tempWorking[dirIndex].pointingLocation, tempWorking[dirIndex].DEcount);
                 printf("[debug] now we are in %s\n", tempWorking[0].name);
-                printDEInfo(tempWorking);
+                printDEInfo(tempWorking[dirIndex]);
                 found = 1; //true
             }
         }
@@ -181,9 +178,9 @@ int pathParser(char *path, unsigned char condition, DE *tempWorking)
     return -1;
 }
 
-void printDEInfo(DE *de)
+void printDEInfo(DE de)
 {
     printf("--- DE info ---\n");
-    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de->name, de->size, de->pointingLocation);
-    printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de->isDir, ctime(&de->createTime), ctime(&de->lastModTime), ctime(&de->lastAccessTime));
+    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de.name, de.size, de.pointingLocation);
+    printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de.isDir, ctime(&de.createTime), ctime(&de.lastModTime), ctime(&de.lastAccessTime));
 }

@@ -23,7 +23,7 @@
 #include "fsFree.c"
 #include "fsDir.c"
 
-#define rootDECount 50 //number of blocks root contains
+#define DEcount 50 //number of blocks root contains
 
 //since we are using it in different functions, we declared it globally
 VCB *vcb;
@@ -32,6 +32,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {
 	//printf("Initializing File System with %ld blocks with a block size of %ld\n",
 	//numberOfBlocks, blockSize);
+
+	mf_blockSize = blockSize;
 
 	//[Step 1] check if it's our volume
 	//malloc space for VCB
@@ -59,16 +61,17 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		vcb->location = 0;
 
 		//init free space
-		int bitMapLocation = initFreeSpace(vcb, blockSize);
+		int bitMapLocation = initFreeSpace(vcb);
 
 		//init root
-		int rootLocation = createDir(0, rootDECount, blockSize, vcb); //not sure bout passing in 0...
+		int rootLocation = createDir(0); //not sure bout passing in 0...
 
 		//Read the root as current working directory
 		//TODO check return value
-		LBAread(cwd, rootLocation, rootDECount);
+		LBAread(cwd, rootLocation, DEcount);
 
 		//init rest of the data of VCB
+		vcb->rootSize = DefaultDECount * sizeof(DE);
 		vcb->bitMapLocation = bitMapLocation;
 		vcb->rootLocation = rootLocation;
 		vcb->freeSpaceStartLocation = rootLocation + vcb->rootSize;

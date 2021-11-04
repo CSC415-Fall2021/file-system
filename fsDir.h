@@ -19,9 +19,11 @@
 #define EXIST_FILE 0x00000001
 #define EXIST_DIR 0x00000002
 
+int DefaultDECount = 50;
+
 //job: create directory, returns the starting block
 //return value: positive num -> success, -1 -> failed
-int createDir(int parentLocation, int DEcount, int blockSize, VCB *vcb);
+int createDir(int parentLocation);
 
 //job: tokenize the path into an array of token
 //then return back the working directory through param,
