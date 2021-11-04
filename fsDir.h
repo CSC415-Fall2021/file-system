@@ -29,4 +29,4 @@ int createDir(int parentLocation);
 //then return back the working directory through param,
 //and check validation of given condition
 //returns 0 means invalid, 1 means valid
-int pathParser(char *path, unsigned char condition, DE *tempWorking);
+bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir);

@@ -26,7 +26,7 @@ int createDir(int parentLocation)
     int numOfBlockNeeded = (mallocSize / mf_blockSize) + 1; //TODO what if mallocSize is product of 512?
     mallocSize = numOfBlockNeeded * mf_blockSize;
     DefaultDECount = mallocSize / sizeof(DE);
-    DE *directory = (DE *)malloc(mallocSize); //TODO DE* or DE**
+    DE *directory = (DE *)malloc(mallocSize); //TODO DE* or DE** and check malloc
 
     for (int i = 0; i < DefaultDECount; i++)
     {
@@ -43,6 +43,8 @@ int createDir(int parentLocation)
     if (startLocation == -1)
     {
         printf("[ERROR] fsDir.c line 45: allocateFreeSpace() failed...\n");
+        free(directory);
+        directory = NULL;
         return -1;
     }
 
@@ -66,12 +68,96 @@ int createDir(int parentLocation)
     time(&directory[1].lastAccessTime);
 
     int ret = LBAwrite(directory, numOfBlockNeeded, startLocation);
+
+    free(directory);
+    directory = NULL;
+
     if (ret != numOfBlockNeeded)
     {
         printf("[ERROR] fsDir.c line 71: LBAwrite returned %d, but we need %d blocks...\n", ret, numOfBlockNeeded);
         return -1;
     }
     return startLocation;
+}
+
+bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir)
+{
+    if (path[0] == '/')
+    {
+        printf("[debug] User passed in relative path...\n");
+        tempWorkingDir = mfs_cwd;
+    }
+
+    int tokenCount = 0;
+    char **tokens = malloc(strlen(path)); //TODO check malloc
+    char *theRest = path;
+    char *token = strtok_r(path, "/", &theRest);
+    while (token != NULL)
+    {
+        tokens[tokenCount++] = token;
+        token = strtok_r(NULL, "/", &theRest);
+    }
+
+    bool found = 0;
+    for (int tokIndex = 0; tokIndex < tokenCount; tokIndex++)
+    {
+        //int DEcount = tempWorkingDir[0].size / sizeof(DE);
+        for (int dirIndex = 0; dirIndex < DefaultDECount; dirIndex++)
+        {
+            if (strcmp(tempWorkingDir[dirIndex].name, tokens[tokIndex]) == 0)
+            {
+                printf("[debug] found entry at %dth index\n", dirIndex);
+                found = 1;
+                int blockCount = tempWorkingDir[dirIndex].size / mf_blockSize;
+                int ret = LBAread(tempWorkingDir, tempWorkingDir[dirIndex].location, blockCount);
+                if (ret != blockCount)
+                {
+                    printf("[ERROR] fsDir.c line 106: LBAread failed...\n");
+                    free(tokens);
+                    tokens = NULL;
+                    return 0;
+                }
+                break;
+            }
+        }
+        if (!found)
+        {
+            printf("[ERROR] fsDir.c line 117: directory does not exist...\n");
+            free(tokens);
+            tokens = NULL;
+            return 0;
+        }
+        found = 0;
+    }
+
+    unsigned char thisCondition = 0x00;
+    for (int i = 2; i < DefaultDECount; i++)
+    {
+        if (strcmp(tempWorkingDir[i].name, tokens[tokenCount - 1]) == 0)
+        {
+            if (tempWorkingDir[i].isDir)
+            {
+                thisCondition = EXIST_DIR;
+            }
+            else
+            {
+                thisCondition = EXIST_FILE;
+            }
+            break;
+        }
+        thisCondition = NOT_EXIST;
+    }
+
+    free(tokens);
+    tokens = NULL;
+
+    printDEInfo(tempWorkingDir[0]);
+
+    if (condition == thisCondition)
+    {
+        return 1;
+    }
+    return 0;
 }
 
 void printDEInfo(DE de)

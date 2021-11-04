@@ -68,7 +68,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 		//Read the root as current working directory
 		//TODO check return value
-		LBAread(cwd, rootLocation, DEcount);
+		LBAread(mfs_cwd, rootLocation, DEcount);
 
 		//init rest of the data of VCB
 		vcb->rootSize = DefaultDECount * sizeof(DE);
