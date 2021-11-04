@@ -62,7 +62,7 @@ typedef struct
 {
 	char name[64];
 	int size;
-	int pointingLocation;
+	int location;
 	bool isDir;
 	time_t createTime;
 	time_t lastModTime;

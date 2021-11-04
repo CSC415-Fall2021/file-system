@@ -36,6 +36,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+//setArray & clearArray: for helper function's purpose
+unsigned char setArray[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
+unsigned char clearArray[8] = {0x7F, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE};
+
 //[Some helper functions]
 //Still developing checkBitUsed
 int setBitUsed(unsigned char *array, int bitIndex);

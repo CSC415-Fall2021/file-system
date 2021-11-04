@@ -17,10 +17,6 @@
 //bitmap: the unsiged char array for managing the free space management
 unsigned char *bitMap;
 
-//setArray & clearArray: for helper function's purpose
-unsigned char setArray[8] = {0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01};
-unsigned char clearArray[8] = {0x7F, 0xBF, 0xDF, 0xEF, 0xF7, 0xFB, 0xFD, 0xFE};
-
 //bit map: 1 -> used, 0 -> free
 
 //initialize the free space
