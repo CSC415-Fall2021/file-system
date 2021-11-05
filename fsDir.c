@@ -82,7 +82,8 @@ int createDir(int parentLocation)
 
 bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir)
 {
-    if (path[0] == '/')
+    //cwd home
+    if (path[0] != '/')
     {
         printf("[debug] User passed in relative path...\n");
         tempWorkingDir = mfs_cwd;
@@ -97,9 +98,13 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir)
         tokens[tokenCount++] = token;
         token = strtok_r(NULL, "/", &theRest);
     }
-
+    // cwd = bar
+    //cd folder/HW1
+    //path = Documents/CSC415/HW
+    //tokens = {"Documents", "CSC415", "HW"}
+    //tokens = {"DocumentsCSC415HW"}
     bool found = 0;
-    for (int tokIndex = 0; tokIndex < tokenCount; tokIndex++)
+    for (int tokIndex = 0; tokIndex < tokenCount - 1; tokIndex++)
     {
         //int DEcount = tempWorkingDir[0].size / sizeof(DE);
         for (int dirIndex = 0; dirIndex < DefaultDECount; dirIndex++)
@@ -129,7 +134,8 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir)
         }
         found = 0;
     }
-
+    //tempWorkingDir = CSC415
+    //last token = HW
     unsigned char thisCondition = 0x00;
     for (int i = 2; i < DefaultDECount; i++)
     {
