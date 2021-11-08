@@ -61,9 +61,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 		//init free space
 		int bitMapLocation = initFreeSpace(mfs_vcb);
+		printf("[debug] bitMapLocation starts at %d\n", bitMapLocation);
 
 		//init root
 		int rootLocation = createDir(0); //not sure bout passing in 0...
+		printf("[debug] rootLocation starts at %d\n", rootLocation);
 
 		//Read the root as current working directory
 		//TODO check return value
@@ -72,6 +74,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		mallocSize = numOfBlockNeeded * mfs_blockSize;
 		mfs_cwd = malloc(mallocSize);
 		LBAread(mfs_cwd, numOfBlockNeeded, rootLocation);
+		printf("[debug] print out cwd info\n");
 		printDEInfo(mfs_cwd[0]);
 
 		//init rest of the data of VCB

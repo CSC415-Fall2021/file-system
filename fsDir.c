@@ -21,13 +21,13 @@
 
 int createDir(int parentLocation)
 {
-    printf("[debug] inside createDir\n");
+    //printf("[debug] inside createDir\n");
     int mallocSize = sizeof(DE) * mfs_defaultDECount;
     int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1; //TODO what if mallocSize is product of 512?
     mallocSize = numOfBlockNeeded * mfs_blockSize;
     mfs_defaultDECount = mallocSize / sizeof(DE);
     DE *directory = (DE *)malloc(mallocSize); //TODO DE* or DE** and check malloc
-    printf("[debug] root size is: %d\n", mallocSize);
+    //printf("[debug] root size is: %d\n", mallocSize);
 
     for (int i = 0; i < mfs_defaultDECount; i++)
     {
@@ -41,7 +41,7 @@ int createDir(int parentLocation)
     }
 
     int startLocation = allocateFreeSpace(numOfBlockNeeded);
-    printf("[debug] startLoation: %d\n", startLocation);
+    // printf("[debug] startLoation: %d\n", startLocation);
     if (startLocation == -1)
     {
         printf("[ERROR] fsDir.c line 45: allocateFreeSpace() failed...\n");
@@ -84,22 +84,35 @@ int createDir(int parentLocation)
 
 bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *lastToken)
 {
+    printf("\n--------- INSIDE THE PATH PARSER ---------\n");
+    printf("[debug] arguments:\n- path: %s\n- condition: %d\n", path, condition);
 
     if (path[0] != '/')
     {
         printf("[debug] User passed in relative path... \n");
         tempWorkingDir = mfs_cwd;
-        printf("[debug] now tempWorkingDir is at %d\n", tempWorkingDir[0].location);
     }
+    else
+    {
+        printf("[debug] User passed in absolute path... \n");
+        printf("[debug] root has %d blocks at %d location\n", mfs_vcb->rootSize / mfs_blockSize, mfs_vcb->rootLocation);
+        LBAread(tempWorkingDir, mfs_vcb->rootSize / mfs_blockSize, mfs_vcb->rootLocation);
+    }
+
+    printf("[debug] print out the tempWorkingDir info\n");
+    printDEInfo(tempWorkingDir[0]);
 
     int tokenCount = 0;
     char **tokens = malloc(strlen(path)); //TODO check malloc
     char *theRest = path;
     char *token = strtok_r(path, "/", &theRest); //seg fault
+
+    printf("[debug] tokenizing the path...\n");
     while (token != NULL)
     {
-        strcpy(tokens[tokenCount], token);
-        printf("[debug] tokens[%d]: %s\n", tokenCount, tokens[tokenCount]);
+        printf("[debug] token: %s\n", token);
+        tokens[tokenCount] = token;
+        printf("[debug] add tokens[%d]: %s\n", tokenCount, tokens[tokenCount]);
         tokenCount++;
         token = strtok_r(NULL, "/", &theRest);
     }
@@ -107,13 +120,14 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     bool found = 0;
     for (int tokIndex = 0; tokIndex < tokenCount - 1; tokIndex++)
     {
-        //printf("[debug] check if dir exist\n");
+        printf("[debug] see if path is valid\n");
+        printf("[debug] checking %s: ", tokens[tokIndex]);
         //int DEcount = tempWorkingDir[0].size / sizeof(DE);
         for (int dirIndex = 0; dirIndex < mfs_defaultDECount; dirIndex++)
         {
             if (strcmp(tempWorkingDir[dirIndex].name, tokens[tokIndex]) == 0)
             {
-                printf("[debug] found entry at %dth index\n", dirIndex);
+                printf("found entry at %dth index\n", dirIndex);
                 found = 1;
                 int blockCount = tempWorkingDir[dirIndex].size / mfs_blockSize;
                 int ret = LBAread(tempWorkingDir, blockCount, tempWorkingDir[dirIndex].location);
@@ -129,6 +143,7 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
         }
         if (!found)
         {
+            printf("entry does not exist.\n");
             printf("[ERROR] fsDir.c line 117: directory does not exist...\n");
             free(tokens);
             tokens = NULL;
@@ -137,13 +152,9 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
         found = 0;
     }
 
+    printf("[debug] print out the tempWorkingDir info (this is the info for second last token)\n");
     printDEInfo(tempWorkingDir[0]);
     unsigned char thisCondition = NOT_EXIST;
-    printf("[debug] tokenCount: %d\n", tokenCount);
-    // for (int i = 0; i < tokenCount; i++)
-    // {
-    //     printf("[debug] token[%d]: %s\n", i, tokens[i]);
-    // }
 
     strcpy(lastToken, tokens[tokenCount - 1]);
 
@@ -163,12 +174,10 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
         }
     }
 
-    printf("[debug] last token is %s\n", lastToken);
+    printf("[debug] last token is %s, condition is %d\n", lastToken, thisCondition);
 
     free(tokens);
     tokens = NULL;
-
-    printDEInfo(tempWorkingDir[0]);
 
     if (condition == thisCondition)
     {
