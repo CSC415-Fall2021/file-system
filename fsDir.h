@@ -13,13 +13,13 @@
 **************************************************************/
 
 #include "fsFree.h"
-#include "mfs.h"
+//#include "mfs.h"
 
 #define NOT_EXIST 0x00000000
 #define EXIST_FILE 0x00000001
 #define EXIST_DIR 0x00000002
 
-int DefaultDECount = 50;
+int mfs_defaultDECount;
 
 //job: create directory, returns the starting block
 //return value: positive num -> success, -1 -> failed
@@ -29,4 +29,6 @@ int createDir(int parentLocation);
 //then return back the working directory through param,
 //and check validation of given condition
 //returns 0 means invalid, 1 means valid
-bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir);
+bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *lastToken);
+
+void printDEInfo(DE de);

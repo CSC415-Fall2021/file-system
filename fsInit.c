@@ -20,33 +20,32 @@
 
 #include "fsLow.h"
 #include "mfs.h"
-#include "fsFree.c"
-#include "fsDir.c"
-
-#define DEcount 50 //number of blocks root contains
+#include "fsFree.h"
+#include "fsDir.h"
 
 //since we are using it in different functions, we declared it globally
-VCB *vcb;
+VCB *mfs_vcb;
 
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 {
 	//printf("Initializing File System with %ld blocks with a block size of %ld\n",
 	//numberOfBlocks, blockSize);
 
-	mf_blockSize = blockSize;
+	mfs_blockSize = blockSize;
+	mfs_defaultDECount = 50;
 
 	//[Step 1] check if it's our volume
 	//malloc space for VCB
-	vcb = malloc(blockSize);
+	mfs_vcb = malloc(blockSize);
 	//read the block to malloc space
-	LBAread(vcb, 1, 0);
+	LBAread(mfs_vcb, 1, 0);
 	//check signature
-	int match = strcmp(vcb->signature, "101");
+	int match = strcmp(mfs_vcb->signature, "101");
 
 	//[Step 2A] If match, load up the bitmap to our memory and set the location to 1
 	if (match == 0)
 	{
-		reloadFreeSpace(vcb, blockSize);
+		reloadFreeSpace(mfs_vcb, blockSize);
 	}
 
 	//[Step 2B] If not match, initialize the volume.
@@ -55,33 +54,43 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		//printf("[debug] not our volume!\n");
 
 		//init first half of VCB
-		strcpy(vcb->signature, "101");
-		vcb->numberOfBlocks = numberOfBlocks;
-		vcb->blockSize = blockSize;
-		vcb->location = 0;
+		strcpy(mfs_vcb->signature, "101");
+		mfs_vcb->numberOfBlocks = numberOfBlocks;
+		mfs_vcb->blockSize = blockSize;
+		mfs_vcb->location = 0;
 
 		//init free space
-		int bitMapLocation = initFreeSpace(vcb);
+		int bitMapLocation = initFreeSpace(mfs_vcb);
 
 		//init root
 		int rootLocation = createDir(0); //not sure bout passing in 0...
 
 		//Read the root as current working directory
 		//TODO check return value
-		LBAread(mfs_cwd, rootLocation, DEcount);
+		int mallocSize = sizeof(DE) * mfs_defaultDECount;
+		int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+		mallocSize = numOfBlockNeeded * mfs_blockSize;
+		mfs_cwd = malloc(mallocSize);
+		LBAread(mfs_cwd, numOfBlockNeeded, rootLocation);
+		printDEInfo(mfs_cwd[0]);
 
 		//init rest of the data of VCB
-		vcb->rootSize = DefaultDECount * sizeof(DE);
-		vcb->bitMapLocation = bitMapLocation;
-		vcb->rootLocation = rootLocation;
-		vcb->freeSpaceStartLocation = rootLocation + vcb->rootSize;
+		mfs_vcb->rootSize = mfs_defaultDECount * sizeof(DE);
+		mfs_vcb->bitMapLocation = bitMapLocation;
+		mfs_vcb->rootLocation = rootLocation;
+		mfs_vcb->freeSpaceStartLocation = rootLocation + mfs_vcb->rootSize;
 
 		//write into disk
-		if (LBAwrite(vcb, 1, 0) != 1)
+		if (LBAwrite(mfs_vcb, 1, 0) != 1)
 		{
 			printf("[ERROR] LBAwrite() failed...\n");
 		}
 	}
+
+	//char *path = malloc(100);
+	//strcpy(path, "foo/bar");
+
+	//fs_mkdir(path, NULL);
 
 	return 0;
 }
@@ -89,7 +98,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 void exitFileSystem()
 {
 	printf("System exiting\n");
-	if (LBAwrite(vcb, 1, 0) != 1)
+	if (LBAwrite(mfs_vcb, 1, 0) != 1)
 	{
 		printf("[ERROR] LBAwrite() failed...\n");
 	}

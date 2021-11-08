@@ -82,7 +82,7 @@ typedef struct
 	int nextFreeBlock;
 } VCB;
 
-int mf_blockSize;
+int mfs_blockSize;
 VCB *mfs_vcb;
 DE *mfs_cwd;
 

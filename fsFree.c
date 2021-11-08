@@ -58,9 +58,9 @@ int initFreeSpace(VCB *vcb)
     //- bitmap
     //- nextFreeBlock in vcb: to keep on track next available block
     //- totalOfActBit: total of actual bit
-    bitMap = malloc(5 * mf_blockSize);
+    bitMap = malloc(5 * mfs_blockSize);
     vcb->nextFreeBlock = 0;
-    int totalOfActBit = 5 * mf_blockSize * 8;
+    int totalOfActBit = 5 * mfs_blockSize * 8;
 
     //[Step 2] mark first 6 bits to used
     //- 0 for VCB
@@ -107,8 +107,8 @@ int initFreeSpace(VCB *vcb)
 int reloadFreeSpace()
 {
     //[Step 1] init the data
-    bitMap = malloc(5 * mf_blockSize);
-    mfs_vcb = malloc(mf_blockSize);
+    bitMap = malloc(5 * mfs_blockSize);
+    mfs_vcb = malloc(mfs_blockSize);
 
     //[Step 2] read the block to memory
     int numOfBlockOfBitMap = LBAread(bitMap, 5, 1);
