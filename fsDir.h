@@ -29,6 +29,6 @@ int createDir(int parentLocation);
 //then return back the working directory through param,
 //and check validation of given condition
 //returns 0 means invalid, 1 means valid
-bool pathParser(char *path, unsigned char condition, DE **tempWorkingDir, char *lastToken);
+bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *lastToken);
 
 void printDEInfo(DE de);

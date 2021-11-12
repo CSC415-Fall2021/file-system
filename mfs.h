@@ -84,7 +84,7 @@ typedef struct
 
 int mfs_blockSize;
 VCB *mfs_vcb;
-DE *mfs_cwd;
+int mfs_cwd_location;
 
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);

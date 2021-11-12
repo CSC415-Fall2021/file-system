@@ -46,6 +46,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 	if (match == 0)
 	{
 		reloadFreeSpace(mfs_vcb, blockSize);
+		mfs_cwd_location = mfs_vcb->rootLocation;
 	}
 
 	//[Step 2B] If not match, initialize the volume.
@@ -67,15 +68,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 		int rootLocation = createDir(0); //not sure bout passing in 0...
 		printf("[debug] rootLocation starts at %d\n", rootLocation);
 
-		//Read the root as current working directory
-		//TODO check return value
-		int mallocSize = sizeof(DE) * mfs_defaultDECount;
-		int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
-		mallocSize = numOfBlockNeeded * mfs_blockSize;
-		mfs_cwd = malloc(mallocSize);
-		LBAread(mfs_cwd, numOfBlockNeeded, rootLocation);
-		printf("[debug] print out cwd info\n");
-		printDEInfo(mfs_cwd[0]);
+		//set the root as current working directory
+		mfs_cwd_location = rootLocation;
+		printf("[debug] cwd location: %d\n", mfs_cwd_location);
 
 		//init rest of the data of VCB
 		mfs_vcb->rootSize = mfs_defaultDECount * sizeof(DE);
