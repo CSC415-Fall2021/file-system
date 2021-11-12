@@ -37,7 +37,7 @@
 #define CMDCP_ON 0
 #define CMDMV_ON 0
 #define CMDMD_ON 1
-#define CMDRM_ON 0
+#define CMDRM_ON 1
 #define CMDCP2L_ON 0
 #define CMDCP2FS_ON 0
 #define CMDCD_ON 0
@@ -307,8 +307,10 @@ int cmd_rm(int argcnt, char *argvec[])
 	char *path = argvec[1];
 
 	//must determine if file or directory
+	printf("[debug] path before calling isDir %s\n", path);
 	if (fs_isDir(path))
 	{
+		printf("[debug] path after calling isDir %s\n", path);
 		return (fs_rmdir(path));
 	}
 	if (fs_isFile(path))

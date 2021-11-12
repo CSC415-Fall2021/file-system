@@ -18,6 +18,7 @@
 #define NOT_EXIST 0x00000000
 #define EXIST_FILE 0x00000001
 #define EXIST_DIR 0x00000002
+#define EXIST 0x00000004
 
 int mfs_defaultDECount;
 

@@ -34,5 +34,5 @@ int reloadFreeSpace();
 //return value: positive num -> success, -1 -> failed
 int allocateFreeSpace(int blockCount);
 
-//[TBD] release the free space
-int releaseFreeSpace();
+//return value: 1 -> success, -1 -> failed
+int releaseFreeSpace(int location, int blockCount);

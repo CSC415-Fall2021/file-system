@@ -100,7 +100,7 @@ char *fs_getcwd(char *buf, size_t size);
 int fs_setcwd(char *buf);	   //linux chdir
 int fs_isFile(char *path);	   //return 1 if file, 0 otherwise
 int fs_isDir(char *path);	   //return 1 if directory, 0 otherwise
-int fs_delete(char *filename); //removes a file
+int fs_delete(char *filename); //removes a file return the deleted file's location, -1 means failed
 
 // This is the strucutre that is filled in from a call to fs_stat
 struct fs_stat

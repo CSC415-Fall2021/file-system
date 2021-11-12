@@ -163,8 +163,21 @@ int allocateFreeSpace(int blockCount)
 }
 
 //[TBD] release the free space
-int releaseFreeSpace()
+int releaseFreeSpace(int location, int blockCount)
 {
+    for (int i = location; i < location + blockCount; i++)
+    {
+        setBitFree(bitMap, i);
+    }
+
+    int ret = LBAwrite(bitMap, 5, 1);
+    if (ret != 5)
+    {
+        printf("[ERROR] fsFree.c line 175: LBAwrite failed...\n");
+        return -1;
+    }
+
+    return 1;
 }
 
 //[Some helper functions]
