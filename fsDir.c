@@ -358,7 +358,7 @@ int fs_rmdir(const char *pathname)
     }
 
     //6
-    int ret = fs_delete(path);
+    int ret = fs_delete(pathname);
 
     //7
     if (ret == -1)
@@ -498,6 +498,7 @@ int fs_isDir(char *path)
     //1 Convert path to char array (to avoid the const warning)
     char path_array[strlen(path) + 1];
     strcpy(path_array, path);
+    printf("[debug] Before calling pathParser, path is %s\npath_array is %s\n", path, path_array);
 
     //2
     int mallocSize = sizeof(DE) * mfs_defaultDECount;
@@ -508,7 +509,7 @@ int fs_isDir(char *path)
 
     //3
     bool valid = pathParser(path_array, EXIST_DIR, tempWorkingDir, lastToken);
-    printf("path is %s\npath_array is %s\n", path, path_array);
+    printf("[debug] After calling pathParser, path is %s\npath_array is %s\n", path, path_array);
     printf("[debug] valid: %d\n", valid);
     printf("[debug] lastToken: %s\n", lastToken);
     printf("[debug] tempWorkingDir @ %p\n", tempWorkingDir);
