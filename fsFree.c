@@ -136,6 +136,7 @@ int allocateFreeSpace(int blockCount)
 
     //[Step 1] get the free space location from vcb field
     int location = mfs_vcb->nextFreeBlock;
+    printf("[debug] next freeblock: %d\n", mfs_vcb->nextFreeBlock);
     //printf("[debuggg] nextFreeBlock: %d\n", location);
 
     //[Step 2] from the location, flip number of blockCount bits to used

@@ -26,11 +26,12 @@ int createDir(int parentLocation)
 
     //printf("[debug] inside createDir\n");
     int mallocSize = sizeof(DE) * mfs_defaultDECount;
-    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1; //TODO what if mallocSize is product of 512?
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1; //TODO
     mallocSize = numOfBlockNeeded * mfs_blockSize;
     mfs_defaultDECount = mallocSize / sizeof(DE);
     printf("[debug] mallocSize: %d\n", mallocSize);
-    DE *directory = malloc(mallocSize); //TODO DE* or DE** and check malloc
+    printf("[debug] err issue\n");
+    DE *directory = malloc(mallocSize); //TODO causing the error
     //printf("[debug] root size is: %d\n", mallocSize);
 
     for (int i = 0; i < mfs_defaultDECount; i++)
@@ -115,7 +116,7 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     printDEInfo(tempWorkingDir[0]);
 
     int tokenCount = 0;
-    char **tokens = malloc(strlen(path)); //TODO check malloc
+    char **tokens = malloc((strlen(path) / 2) * sizeof(char *)); //TODO check malloc {"foo", "bar"}
     char *theRest;
     char *token = strtok_r(path, "/", &theRest);
 
@@ -194,9 +195,8 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     free(tokens);
     tokens = NULL;
     printf("[debug] tempWorkingDir @ %p\n", tempWorkingDir);
-    printf("--------- END OF THE PATH PARSER ---------\n");
-
     printf("[debug] comparing the given condition with this condition, condition: %d, this condition: %d\n", condition, thisCondition);
+    printf("--------- END OF THE PATH PARSER ---------\n");
 
     if (condition == (EXIST_FILE | EXIST_DIR))
     {
@@ -220,7 +220,8 @@ int fs_mkdir(const char *pathname, mode_t mode)
     printf("\n--------- INSIDE THE MKDIR ---------\n");
 
     //1 convert path to char array (to avoid the const warning)
-    char path[strlen(pathname)];
+    char *path = malloc(strlen(pathname) + 1);
+    //char path[strlen(pathname)];
     strcpy(path, pathname);
 
     //2 malloc space for tempWorkingDir and lastToken
@@ -264,6 +265,7 @@ int fs_mkdir(const char *pathname, mode_t mode)
     }
 
     //6 Create directory for lastToken
+    printf("[debug] parent location: %d\n", tempWorkingDir[0].location);
     int newLocation = createDir(tempWorkingDir[0].location);
     if (newLocation == -1)
     {
@@ -519,6 +521,128 @@ int fs_isDir(char *path)
     printf("\n--------- END THE ISDIR ---------\n");
 
     return valid;
+}
+
+char *fs_getcwd(char *buf, size_t size)
+{
+
+    printf("\n--------- INSIDE THE GETCWD ---------\n");
+
+    //1
+    printf("[debug] size: %ld\n", size);
+    char **tokenArray = malloc(size);
+    int tokenCount = 0;
+    int findNameOf = 0; //TODO
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    DE *tempWorkingDir = malloc(mallocSize);
+
+    //2 temp = "bar"
+    LBAread(tempWorkingDir, numOfBlockNeeded, mfs_cwd_location);
+    findNameOf = tempWorkingDir[0].location;
+    printf("[debug] print the init DE info of tempWorkingDir\n");
+    printDEInfo(tempWorkingDir[0]);
+    printf("[debug] print the parent DE info\n");
+    printDEInfo(tempWorkingDir[1]);
+    //"bar"
+    //3
+    while (tempWorkingDir[1].location != tempWorkingDir[0].location)
+    {
+        LBAread(tempWorkingDir, numOfBlockNeeded, tempWorkingDir[1].location); //"foo"
+        printf("[debug] print the current tempWorkingDir DE info, should be same as parent\n");
+        printDEInfo(tempWorkingDir[0]);
+        for (int i = 2; i < mfs_defaultDECount; i++)
+        {
+            if (tempWorkingDir[i].location == findNameOf)
+            {
+                printf("[debug] found %s at %d\n", tempWorkingDir[i].name, i);
+                printf("[debug] malloc size: %ld\n", sizeof(tokenArray) * strlen(tempWorkingDir[i].name) + 1);
+                tokenArray[tokenCount] = malloc(sizeof(tokenArray) * strlen(tempWorkingDir[i].name) + 1);
+                printf("[debug] sizeOf(tokenArray): %ld\n", strlen(tokenArray[0]));
+                strcpy(tokenArray[tokenCount], tempWorkingDir[i].name);
+                printf("[debug] tokenArray[%d]: %s\n", tokenCount, tokenArray[tokenCount]);
+                tokenCount++;
+                break;
+            }
+        }
+        findNameOf = tempWorkingDir[0].location;
+        printf("[debug] print the parent DE info (if location is 6, should stop)\n");
+        printDEInfo(tempWorkingDir[1]);
+    }
+
+    //4
+    char *path = malloc(size + tokenCount - 1);
+    printf("[debug] tokenCount = %d\n", tokenCount);
+    strcpy(path, "/"); //paht = "/"
+    for (int i = tokenCount - 1; i >= 0; i--)
+    {
+        printf("[debug] path: %s\n[debug] tokenArray[%d]: %s\n", path, i, tokenArray[i]);
+        strcat(path, tokenArray[i]); //path = "/foo"
+        if (i > 0)
+            strcat(path, "/");
+        printf("[debug] current path is %s\n", path);
+    }
+
+    //5
+    strcpy(buf, path);
+
+    //6
+    free(tempWorkingDir);
+    free(tokenArray);
+    tempWorkingDir = NULL;
+    tokenArray = NULL;
+
+    printf("\n--------- END THE GETCWD ---------\n");
+
+    return path;
+}
+
+int fs_setcwd(char *buf)
+{
+    printf("\n--------- INSIDE THE SETCWD ---------\n");
+
+    //1 Convert path to char array (to avoid the const warning)
+    char path[strlen(buf)];
+    strcpy(path, buf);
+
+    //2
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    DE *tempWorkingDir = malloc(mallocSize);
+    char *lastToken = malloc(256);
+
+    //3
+    bool valid = pathParser(path, EXIST_DIR, tempWorkingDir, lastToken);
+
+    //4
+    if (!valid)
+    {
+        printf("[ERROR] fsDir.c line 549: invalid path...\n");
+        return -1;
+    }
+
+    //5
+    for (int i = 2; i < mfs_defaultDECount; i++)
+    {
+        if (strcmp(tempWorkingDir[i].name, lastToken) == 0)
+        {
+            mfs_cwd_location = tempWorkingDir[i].location;
+            break;
+        }
+    }
+    printf("[debug] mfs_cwd_location: %d\n", mfs_cwd_location);
+    printf("\n--------- END THE SETCWD ---------\n");
+
+    //6
+    free(tempWorkingDir);
+    tempWorkingDir = NULL;
+    free(lastToken);
+    lastToken = NULL;
+
+    //6
+    return 0;
 }
 
 void printDEInfo(DE de)
