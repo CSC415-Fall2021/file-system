@@ -56,6 +56,8 @@ typedef struct
 	unsigned short d_reclen;		 /*length of this record */
 	unsigned short dirEntryPosition; /*which directory entry position, like file pos */
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
+	unsigned char fileType;
+	char d_name[256];
 } fdDir;
 
 typedef struct

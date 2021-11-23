@@ -31,5 +31,7 @@ int createDir(int parentLocation);
 //and check validation of given condition
 //returns 0 means invalid, 1 means valid
 bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *lastToken);
-
+bool allocateDirectory(DE *directory);
 void printDEInfo(DE de);
+void printdirItemInfo(struct fs_diriteminfo *info);
+void printfdDir(fdDir *dirp);

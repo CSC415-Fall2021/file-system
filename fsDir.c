@@ -19,6 +19,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+bool allocateDirectory(DE *directory)
+{
+    //1
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    directory = malloc(mallocSize);
+
+    if (directory == NULL)
+    {
+        printf("[ERROR] allocateDirectory: malloc failed...\n");
+        return 0;
+    }
+
+    return 1;
+}
+
 int createDir(int parentLocation)
 {
 
@@ -112,11 +129,8 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
         LBAread(tempWorkingDir, mfs_vcb->rootSize / mfs_blockSize, mfs_vcb->rootLocation);
     }
 
-    printf("[debug] print out the tempWorkingDir info\n");
-    printDEInfo(tempWorkingDir[0]);
-
     int tokenCount = 0;
-    char **tokens = malloc((strlen(path) / 2) * sizeof(char *)); //TODO check malloc {"foo", "bar"}
+    char **tokens = malloc((strlen(path) / 2) * sizeof(char *)); //TODO check malloc
     char *theRest;
     char *token = strtok_r(path, "/", &theRest);
 
@@ -168,10 +182,11 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     printf("[debug] print out the tempWorkingDir info (this is the info for second last token)\n");
     printDEInfo(tempWorkingDir[0]);
     unsigned char thisCondition = NOT_EXIST;
-
-    strcpy(lastToken, tokens[tokenCount - 1]);
-
-    for (int i = 2; i < mfs_defaultDECount; i++)
+    if (tokenCount != 0)
+    {
+        strcpy(lastToken, tokens[tokenCount - 1]);
+    }
+    for (int i = 0; i < mfs_defaultDECount; i++)
     {
         if (strcmp(tempWorkingDir[i].name, lastToken) == 0)
         {
@@ -188,6 +203,12 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
             }
             break;
         }
+    }
+
+    if (strcmp(path, "/") == 0)
+    {
+        printf("[debug] lastToken is root so always exist\n");
+        thisCondition = EXIST_DIR;
     }
 
     printf("[debug] last token is %s, condition is %d\n", lastToken, thisCondition);
@@ -389,6 +410,149 @@ int fs_rmdir(const char *pathname)
     return 1;
 }
 
+fdDir *fs_opendir(const char *name)
+{
+    printf("\n--------- INSIDE THE OPENDIR ---------\n");
+    printf("[debug] name is %s before strcpy\n", name);
+    //1 Convert path to char array (to avoid the const warning)
+    char path[strlen(name)];
+    strcpy(path, name);
+    printf("[debug] path is %s\nname is %s\n", path, name);
+
+    //2
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    DE *tempWorkingDir = malloc(mallocSize);
+    char *lastToken = malloc(256);
+
+    //3
+    bool valid = pathParser(path, EXIST_DIR, tempWorkingDir, lastToken);
+    printf("[debug] print out tempWorkingDir info\n");
+    printDEInfo(tempWorkingDir[0]);
+    printf("[debug] lastToken: %s\n", lastToken);
+
+    //4
+    if (!valid)
+    {
+        printf("[ERROR] Dir.c line 419: invalid path\n");
+        return NULL;
+    }
+
+    //5
+    int DEindex;
+    for (int i = 2; i < mfs_defaultDECount; i++)
+    {
+        if (tempWorkingDir[i].name == lastToken)
+        {
+            DEindex = i;
+            break;
+        }
+    }
+
+    printf("[debug] DEindex: %d\n", DEindex);
+    printf("[debug] print out DE info in DEindex\n");
+    printDEInfo(tempWorkingDir[DEindex]);
+
+    //6
+    fdDir *dirp = malloc(sizeof(dirp));
+
+    //7
+    dirp->d_reclen = tempWorkingDir[DEindex].size;
+    dirp->directoryStartLocation = tempWorkingDir[DEindex].location;
+    dirp->dirEntryPosition = DEindex;
+    strcpy(dirp->d_name, tempWorkingDir[DEindex].name);
+    if (tempWorkingDir[DEindex].isDir)
+    {
+        dirp->fileType = DT_DIR;
+    }
+    else
+    {
+        dirp->fileType = DT_REG;
+    }
+
+    free(tempWorkingDir);
+    tempWorkingDir = NULL;
+    free(lastToken);
+    lastToken = NULL;
+
+    printf("[debug] print out dirInfo\n");
+    printfdDir(dirp);
+
+    printf("\n--------- END THE OPENDIR ---------\n");
+
+    //8
+    return dirp;
+}
+
+struct fs_diriteminfo *fs_readdir(fdDir *dirp)
+{
+
+    //printf("\n--------- INSIDE THE READDIR ---------\n");
+
+    //1
+    if (dirp == NULL)
+    {
+        printf("[ERROR] fsDir.c in opendir, line 452: invalid argument\n");
+        return NULL;
+    }
+
+    if (dirp->dirEntryPosition > dirp->d_reclen / sizeof(DE))
+    {
+        printf("[debug] reached the end of directory\n");
+        return NULL;
+    }
+
+    //2
+    struct fs_diriteminfo *info = malloc(sizeof(struct fs_diriteminfo));
+
+    //3 (read the working directory)
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    DE *workingDir = malloc(mallocSize);
+    LBAread(workingDir, numOfBlockNeeded, dirp->directoryStartLocation);
+
+    if (strcmp(workingDir[dirp->dirEntryPosition].name, "\0") == 0)
+    {
+        //printf("[debug] empty DE entries!\n");
+        return NULL;
+    }
+
+    //3
+    strcpy(info->d_name, workingDir[dirp->dirEntryPosition].name);
+    info->d_reclen = dirp->d_reclen;
+    info->fileType = dirp->fileType;
+
+    //printf("[debug] print out dir item info\n");
+    //printdirItemInfo(info);
+
+    //4 (move to the next)
+    dirp->dirEntryPosition++;
+
+    //printf("\n--------- END THE READDIR ---------\n");
+
+    //4
+    return info;
+}
+
+int fs_closedir(fdDir *dirp)
+{
+    //1
+    if (dirp == NULL)
+    {
+        printf("[ERROR] fsDir.c closedir, line 482: invalid argument\n");
+        return -1;
+    }
+
+    //2
+    free(dirp);
+    dirp = NULL;
+
+    //3
+    return 1;
+}
+
 int fs_delete(char *filename)
 {
 
@@ -532,7 +696,7 @@ char *fs_getcwd(char *buf, size_t size)
     printf("[debug] size: %ld\n", size);
     char **tokenArray = malloc(size);
     int tokenCount = 0;
-    int findNameOf = 0; //TODO
+    int findNameOf = 0;
     int mallocSize = sizeof(DE) * mfs_defaultDECount;
     int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
     mallocSize = numOfBlockNeeded * mfs_blockSize;
@@ -624,7 +788,7 @@ int fs_setcwd(char *buf)
     }
 
     //5
-    for (int i = 2; i < mfs_defaultDECount; i++)
+    for (int i = 0; i < mfs_defaultDECount; i++)
     {
         if (strcmp(tempWorkingDir[i].name, lastToken) == 0)
         {
@@ -645,9 +809,27 @@ int fs_setcwd(char *buf)
     return 0;
 }
 
+int fs_stat(const char *path, struct fs_stat *buf)
+{
+}
+
 void printDEInfo(DE de)
 {
     printf("--- DE info ---\n");
     printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de.name, de.size, de.location);
     printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de.isDir, ctime(&de.createTime), ctime(&de.lastModTime), ctime(&de.lastAccessTime));
+}
+
+void printdirItemInfo(struct fs_diriteminfo *info)
+{
+    printf("--- dir item info ---\n");
+    printf("- d_name: %s\n- d_reclen: %d\n- fileType: %d\n",
+           info->d_name, info->d_reclen, info->fileType);
+}
+
+void printfdDir(fdDir *dirp)
+{
+    printf("--- fdDir info ---\n");
+    printf("- d_name: %s\n- d_reclen: %d\n- dirEntryPosition: %d\n- directoryStartLocation: %ld\n- fileType: %d\n",
+           dirp->d_name, dirp->d_reclen, dirp->dirEntryPosition, dirp->directoryStartLocation, dirp->fileType);
 }
