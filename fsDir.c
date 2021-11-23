@@ -19,23 +19,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-bool allocateDirectory(DE *directory)
-{
-    //1
-    int mallocSize = sizeof(DE) * mfs_defaultDECount;
-    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
-    mallocSize = numOfBlockNeeded * mfs_blockSize;
-    directory = malloc(mallocSize);
-
-    if (directory == NULL)
-    {
-        printf("[ERROR] allocateDirectory: malloc failed...\n");
-        return 0;
-    }
-
-    return 1;
-}
-
 int createDir(int parentLocation)
 {
 
@@ -814,6 +797,70 @@ int fs_setcwd(char *buf)
 
 int fs_stat(const char *path, struct fs_stat *buf)
 {
+    //1 Convert path to char array (to avoid the const warning)
+    char convertedPath[strlen(path)];
+    strcpy(convertedPath, path);
+
+    //2
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    DE *tempWorkingDir = malloc(mallocSize);
+    char *lastToken = malloc(256);
+
+    //3
+    bool valid = pathParser(convertedPath, EXIST_DIR | EXIST_FILE, tempWorkingDir, lastToken);
+
+    //4
+    if (!valid)
+    {
+        printf("[ERROR] fs_stat: invalid path\n");
+        return -1;
+    }
+
+    //5 loop through the tempWorkingDir to find lastToken
+    int DEindex;
+    for (int i = 2; i < mfs_defaultDECount; i++)
+    {
+        if (strcmp(lastToken, tempWorkingDir[i].name) == 0)
+        {
+            DEindex = i;
+            break;
+        }
+    }
+
+    //6 fill in the buf
+    buf->st_size = tempWorkingDir[DEindex].size;
+    buf->st_blksize = mfs_blockSize;
+    buf->st_blocks = numOfBlockNeeded;
+    buf->st_createtime = tempWorkingDir[DEindex].createTime;
+    buf->st_modtime = tempWorkingDir[DEindex].lastModTime;
+    buf->st_accesstime = tempWorkingDir[DEindex].lastAccessTime;
+
+    //7
+    free(tempWorkingDir);
+    tempWorkingDir = NULL;
+    free(lastToken);
+    lastToken = NULL;
+
+    return 1;
+}
+
+bool allocateDirectory(DE *directory)
+{
+    //1
+    int mallocSize = sizeof(DE) * mfs_defaultDECount;
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+    mallocSize = numOfBlockNeeded * mfs_blockSize;
+    directory = malloc(mallocSize);
+
+    if (directory == NULL)
+    {
+        printf("[ERROR] allocateDirectory: malloc failed...\n");
+        return 0;
+    }
+
+    return 1;
 }
 
 void printDEInfo(DE de)
