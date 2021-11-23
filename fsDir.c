@@ -440,11 +440,14 @@ fdDir *fs_opendir(const char *name)
     }
 
     //5
+    printf("[debug] finding %s\n", lastToken);
     int DEindex;
     for (int i = 2; i < mfs_defaultDECount; i++)
     {
-        if (tempWorkingDir[i].name == lastToken)
+        printf("[debug] temp[%d] is %s\n", i, tempWorkingDir[i].name);
+        if (strcmp(tempWorkingDir[i].name, lastToken) == 0)
         {
+            printf("[debug] found %s at %d\n", lastToken, i);
             DEindex = i;
             break;
         }
@@ -497,11 +500,11 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
         return NULL;
     }
 
-    if (dirp->dirEntryPosition > dirp->d_reclen / sizeof(DE))
+    /*if (dirp->dirEntryPosition > dirp->d_reclen / sizeof(DE))
     {
         printf("[debug] reached the end of directory\n");
         return NULL;
-    }
+    }*/
 
     //2
     struct fs_diriteminfo *info = malloc(sizeof(struct fs_diriteminfo));
