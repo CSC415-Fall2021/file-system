@@ -364,7 +364,7 @@ int fs_rmdir(const char *pathname)
     }
 
     //6
-    int ret = fs_delete(pathname);
+    int ret = fs_delete((char *)pathname);
 
     //7
     if (ret == -1)
