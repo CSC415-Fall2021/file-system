@@ -13,7 +13,7 @@
 **************************************************************/
 
 #include "fsFree.h"
-//#include "mfs.h"
+#include "mfs.h"
 
 #define NOT_EXIST 0x00000000
 #define EXIST_FILE 0x00000001

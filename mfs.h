@@ -64,6 +64,8 @@ typedef struct
 {
 	char name[64];
 	int size;
+	int actualSize;
+	int blockCount;
 	int location;
 	bool isDir;
 	time_t createTime;

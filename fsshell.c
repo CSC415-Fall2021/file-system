@@ -1,9 +1,9 @@
 /**************************************************************
-* Class:  CSC-415-02&03  Fall 2021
-* Names: Tun-Ni Chiang, Jiasheng Li, Christopher Ling, Shixin Wang
-* Student IDs: 921458769, 916473043, 918266861, 918663491
-* GitHub Name: tunni-chiang, jiasheng-li, dslayer1392, uyguyguy
-* Group Name: Bug Master
+* Class:  CSC-415-0# - Fall 2021
+* Names: 
+* Student IDs:
+* GitHub Name:
+* Group Name:
 * Project: Basic File System
 *
 * File: fsShell.c
@@ -26,6 +26,7 @@
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "b_io.h"
 
 #define SINGLE_QUOTE 0x27
 #define DOUBLE_QUOTE 0x22
@@ -34,12 +35,12 @@
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
 #define CMDLS_ON 1
-#define CMDCP_ON 0
+#define CMDCP_ON 1
 #define CMDMV_ON 0
 #define CMDMD_ON 1
 #define CMDRM_ON 1
-#define CMDCP2L_ON 0
-#define CMDCP2FS_ON 0
+#define CMDCP2L_ON 1
+#define CMDCP2FS_ON 1
 #define CMDCD_ON 1
 #define CMDPWD_ON 1
 
@@ -246,7 +247,6 @@ int cmd_cp(int argcnt, char *argvec[])
 		printf("Usage: cp srcfile [destfile]\n");
 		return (-1);
 	}
-
 	testfs_src_fd = b_open(src, O_RDONLY);
 	testfs_dest_fd = b_open(dest, O_WRONLY | O_CREAT | O_TRUNC);
 	do
@@ -268,6 +268,7 @@ int cmd_mv(int argcnt, char *argvec[])
 #if (CMDMV_ON == 1)
 	return -99;
 	// **** TODO ****  For you to implement
+	//get_cwd
 #endif
 	return 0;
 }
@@ -307,10 +308,8 @@ int cmd_rm(int argcnt, char *argvec[])
 	char *path = argvec[1];
 
 	//must determine if file or directory
-	printf("[debug] path before calling isDir %s\n", path);
 	if (fs_isDir(path))
 	{
-		printf("[debug] path after calling isDir %s\n", path);
 		return (fs_rmdir(path));
 	}
 	if (fs_isFile(path))

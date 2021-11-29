@@ -26,12 +26,12 @@ int createDir(int parentLocation)
 
     //printf("[debug] inside createDir\n");
     int mallocSize = sizeof(DE) * mfs_defaultDECount;
-    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1; //TODO
+    int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
     mallocSize = numOfBlockNeeded * mfs_blockSize;
     mfs_defaultDECount = mallocSize / sizeof(DE);
     printf("[debug] mallocSize: %d\n", mallocSize);
     printf("[debug] err issue\n");
-    DE *directory = malloc(mallocSize); //TODO causing the error
+    DE *directory = malloc(mallocSize);
     //printf("[debug] root size is: %d\n", mallocSize);
 
     for (int i = 0; i < mfs_defaultDECount; i++)
@@ -57,6 +57,8 @@ int createDir(int parentLocation)
 
     strcpy(directory[0].name, ".");
     directory[0].size = mallocSize;
+    directory[0].actualSize = sizeof(DE) * 2;
+    directory[0].blockCount = numOfBlockNeeded;
     directory[0].location = startLocation;
     directory[0].isDir = 1;
     time(&directory[0].createTime);
@@ -69,6 +71,9 @@ int createDir(int parentLocation)
         directory[1].location = startLocation;
     else
         directory[1].location = parentLocation;
+
+    directory[0].actualSize = sizeof(DE) * 2;
+    directory[0].blockCount = numOfBlockNeeded;
     directory[1].isDir = 1;
     time(&directory[1].createTime);
     time(&directory[1].lastModTime);
@@ -276,16 +281,20 @@ int fs_mkdir(const char *pathname, mode_t mode)
         printf("[ERROR] fsDir.c line 211: createDir error...\n");
     }
 
-    //7 Set the DE to the index
+    //7 Set the DE to the index and also update the parent information
     strcpy(tempWorkingDir[DEindex].name, lastToken);
     tempWorkingDir[DEindex].size = ((mfs_defaultDECount * sizeof(DE)) / mfs_blockSize + 1) * mfs_blockSize;
     tempWorkingDir[DEindex].location = newLocation;
+    tempWorkingDir[DEindex].actualSize = sizeof(DE) * 2;
+    tempWorkingDir[DEindex].blockCount = numOfBlockNeeded;
     tempWorkingDir[DEindex].isDir = 1;
     time(&tempWorkingDir[DEindex].createTime);
     time(&tempWorkingDir[DEindex].lastModTime);
     time(&tempWorkingDir[DEindex].lastAccessTime);
     printf("[debug] printout directory info for new directory\n");
     printDEInfo(tempWorkingDir[DEindex]);
+
+    tempWorkingDir[0].actualSize += sizeof(DE);
 
     //8 Write into disk
     int blockCount = tempWorkingDir[0].size / mfs_blockSize;
@@ -364,7 +373,7 @@ int fs_rmdir(const char *pathname)
     }
 
     //6
-    int ret = fs_delete(pathname);
+    int ret = fs_delete((char *)pathname);
 
     //7
     if (ret == -1)
@@ -436,6 +445,12 @@ fdDir *fs_opendir(const char *name)
         }
     }
 
+    //special case for root
+    if (strcmp(lastToken, "\0") == 0)
+    {
+        DEindex = 0;
+    }
+
     printf("[debug] DEindex: %d\n", DEindex);
     printf("[debug] print out DE info in DEindex\n");
     printDEInfo(tempWorkingDir[DEindex]);
@@ -499,9 +514,14 @@ struct fs_diriteminfo *fs_readdir(fdDir *dirp)
     DE *workingDir = malloc(mallocSize);
     LBAread(workingDir, numOfBlockNeeded, dirp->directoryStartLocation);
 
-    if (strcmp(workingDir[dirp->dirEntryPosition].name, "\0") == 0)
+    while (strcmp(workingDir[dirp->dirEntryPosition].name, "\0") == 0 && dirp->dirEntryPosition < mfs_defaultDECount - 1)
     {
-        //printf("[debug] empty DE entries!\n");
+        dirp->dirEntryPosition++;
+    }
+
+    if (dirp->dirEntryPosition == mfs_defaultDECount - 1)
+    {
+        printf("[debug] end of the directory!\n");
         return NULL;
     }
 
@@ -866,8 +886,9 @@ bool allocateDirectory(DE *directory)
 void printDEInfo(DE de)
 {
     printf("--- DE info ---\n");
-    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n", de.name, de.size, de.location);
+    printf("- name: %s\n- size: %d\n- pointingLocation: %d\n- blockCount: %d\n- actual size: %d\n", de.name, de.size, de.location, de.blockCount, de.actualSize);
     printf("- isDir: %d\n- createTime: %s\n- lastMod: %s\n- lastAccess: %s\n", de.isDir, ctime(&de.createTime), ctime(&de.lastModTime), ctime(&de.lastAccessTime));
+    printf("*note size of DE is: %ld\n", sizeof(DE));
 }
 
 void printdirItemInfo(struct fs_diriteminfo *info)
