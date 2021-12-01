@@ -361,7 +361,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 			fcbArray[fd].currentBlock += 1;
 			fcbArray[fd].bufIndex = 0;
-			fcbArray[fd].fi->actualSize += B_CHUNK_SIZE;
 		}
 	}
 
@@ -371,7 +370,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		printf("[debug] inside part 2\n");
 		LBAwrite(buffer + part1, transferBlocks, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 		fcbArray[fd].currentBlock += transferBlocks;
-		fcbArray[fd].fi->actualSize += part2;
 	}
 
 	//7 part3
@@ -384,12 +382,12 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		{
 			// printf("[debug] block is full\n");
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
-			fcbArray[fd].fi->actualSize += B_CHUNK_SIZE;
 		}
 	}
 
 	//8 calculate returned byte
 	bytesReturned = part1 + part2 + part3;
+	fcbArray[fd].fi->actualSize += bytesReturned;
 	// printf("[debug] bytesReturned: %d\n", bytesReturned);
 	printf("[debug] printout DE info\n");
 	printDEInfo(*fcbArray[fd].fi);
@@ -549,15 +547,14 @@ void b_close(b_io_fd fd)
 	// printf("[debug] bufIndex: %d\n", fcbArray[fd].bufIndex);
 	printf("[debug] printout DE info\n");
 	printDEInfo(*fcbArray[fd].fi);
+	int tempSize;
 
-	int tempActualSize;
-	if (fcbArray[fd].bufIndex < B_CHUNK_SIZE && fcbArray[fd].accessMode | O_WRONLY)
+	if (fcbArray[fd].bufIndex < B_CHUNK_SIZE)
 	{
 		printf("[debug] doing the last LBAwrite with buf: %s\n", fcbArray[fd].buf);
 		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + fcbArray[fd].currentBlock);
-		fcbArray[fd].fi->actualSize += fcbArray[fd].bufIndex;
-		tempActualSize = fcbArray[fd].fi->actualSize;
 		printf("[debug] actual size is %d\n", fcbArray[fd].fi->actualSize);
+		tempSize = fcbArray[fd].fi->actualSize;
 	}
 
 	int mallocSize = sizeof(DE) * mfs_defaultDECount;
@@ -594,8 +591,8 @@ void b_close(b_io_fd fd)
 		return;
 	}
 
-	printf("[debug] !actual size is %d\n", tempActualSize);
-	tempWorkingDir[DEindex].actualSize = tempActualSize; //TODO
+	tempWorkingDir[DEindex].actualSize = tempSize;
+
 	printf("[debug] print DE info\n");
 	printDEInfo(tempWorkingDir[DEindex]);
 	LBAwrite(tempWorkingDir, tempWorkingDir[0].blockCount, tempWorkingDir[0].location);
