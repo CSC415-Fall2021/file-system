@@ -36,7 +36,7 @@
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
 #define CMDLS_ON 1
 #define CMDCP_ON 1
-#define CMDMV_ON 0
+#define CMDMV_ON 1
 #define CMDMD_ON 1
 #define CMDRM_ON 1
 #define CMDCP2L_ON 1
@@ -220,7 +220,6 @@ int cmd_ls(int argcnt, char *argvec[])
 /****************************************************
 *  Copy file commmand
 ****************************************************/
-
 int cmd_cp(int argcnt, char *argvec[])
 {
 #if (CMDCP_ON == 1)
@@ -266,9 +265,13 @@ int cmd_cp(int argcnt, char *argvec[])
 int cmd_mv(int argcnt, char *argvec[])
 {
 #if (CMDMV_ON == 1)
-	return -99;
 	// **** TODO ****  For you to implement
 	//get_cwd
+	printf("--- INSIDE MV COMMAND\n");
+	for (int i = 0; i < argcnt; i++)
+	{
+		printf("[debug] argvec[%d]: %s\n", i, argvec[i]);
+	}
 #endif
 	return 0;
 }
@@ -353,10 +356,11 @@ int cmd_cp2l(int argcnt, char *argvec[])
 	}
 
 	testfs_fd = b_open(src, O_RDONLY);
-	linux_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC);
+	linux_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	do
 	{
 		readcnt = b_read(testfs_fd, buf, BUFFERLEN);
+		printf("[debug] return: %d & buf: %s\n", readcnt, buf);
 		write(linux_fd, buf, readcnt);
 	} while (readcnt == BUFFERLEN);
 	b_close(testfs_fd);

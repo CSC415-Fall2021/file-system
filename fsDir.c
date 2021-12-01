@@ -205,13 +205,13 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     tokens = NULL;
     printf("[debug] tempWorkingDir @ %p\n", tempWorkingDir);
     printf("[debug] comparing the given condition with this condition, condition: %d, this condition: %d\n", condition, thisCondition);
-    printf("--------- END OF THE PATH PARSER ---------\n");
 
     if (condition == (EXIST_FILE | EXIST_DIR))
     {
         printf("[debug] checking for exist dir or file\n");
         if (thisCondition != NOT_EXIST)
         {
+            printf("[debug] not equal!\n");
             return 1;
         }
     }
@@ -220,6 +220,8 @@ bool pathParser(char *path, unsigned char condition, DE *tempWorkingDir, char *l
     {
         return 1;
     }
+
+    printf("--------- END OF THE PATH PARSER ---------\n");
     return 0;
 }
 

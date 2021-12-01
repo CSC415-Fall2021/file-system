@@ -96,9 +96,9 @@ b_io_fd b_open(char *filename, int flags)
 
 	//2 pathparser
 	bool valid = pathParser(filename, EXIST_FILE, tempWorkingDir, lastToken);
-	if (!valid && flags & O_CREAT)
+	if (!valid && flags | O_CREAT)
 	{
-		// printf("[debug] has O_CREAT flag and invalid, so creating new file...\n");
+		printf("[debug] has O_CREAT flag and invalid, so creating new file...\n");
 		int LBAindex = allocateFreeSpace(mfs_default_file_block);
 		int DEindex = -1;
 		for (int i = 2; i < mfs_defaultDECount; i++)
@@ -115,7 +115,7 @@ b_io_fd b_open(char *filename, int flags)
 			return -1;
 		}
 
-		// printf("[debug] found empty DEindex at %d\n", DEindex);
+		// printf("[debug] !!!!!!!found empty DEindex at %d\n", DEindex);
 
 		strcpy(tempWorkingDir[DEindex].name, lastToken);
 		// printf("[debug] name at %d is %s\n", DEindex, tempWorkingDir[DEindex].name);
@@ -128,19 +128,10 @@ b_io_fd b_open(char *filename, int flags)
 		time(&tempWorkingDir[DEindex].lastModTime);
 		time(&tempWorkingDir[DEindex].lastAccessTime);
 
-		printf("[debug] printing out DE info\n");
-		printDEInfo(tempWorkingDir[DEindex]);
-
 		char *buffer = malloc(tempWorkingDir[DEindex].size);
-		char *test = malloc(mfs_blockSize * 2);
-		// printf("[debug] mallocing size of %d for buffer\n", tempWorkingDir[DEindex].size);
-		strcpy(buffer, "hi, my name is Claire!");
-		// printf("[debug] !!!!!!current buffer is %s\n", buffer);
-		// printf("[debug] lba write for %d blocks at %d location\n", tempWorkingDir[DEindex].blockCount, tempWorkingDir[DEindex].location);
+		// printf("[debug] buf: %s\n", buffer);
 		LBAwrite(buffer, tempWorkingDir[DEindex].blockCount, tempWorkingDir[DEindex].location);
 		LBAwrite(tempWorkingDir, tempWorkingDir[0].blockCount, tempWorkingDir[0].location);
-		LBAread(test, 2, tempWorkingDir[DEindex].location);
-		// printf("[debug] testing buffer: %s\n", test);
 		free(buffer);
 		buffer = NULL;
 	}
@@ -176,7 +167,7 @@ b_io_fd b_open(char *filename, int flags)
 	fcbArray[FCBindex].fi = &tempWorkingDir[DEindex]; //unless we don't change
 	fcbArray[FCBindex].buf = malloc(B_CHUNK_SIZE);
 	fcbArray[FCBindex].bufIndex = 0;
-	fcbArray[FCBindex].bufLen = B_CHUNK_SIZE;
+	fcbArray[FCBindex].bufLen = 0;
 	fcbArray[FCBindex].currentBlock = 0;
 	fcbArray[FCBindex].accessMode = flags;
 
@@ -198,6 +189,9 @@ b_io_fd b_open(char *filename, int flags)
 		printf("[debug] flags has O_APPEND\n");
 		b_seek(FCBindex, fcbArray[FCBindex].bufIndex, SEEK_END);
 	}
+
+	printf("[debug] printing out DE info\n");
+	printDEInfo(tempWorkingDir[DEindex]);
 
 	//6
 	free(tempWorkingDir);
@@ -268,7 +262,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 	}
 
 	//1 check if we have the write mode
-	if (!(fcbArray[fd].accessMode & O_RDWR || fcbArray[fd].accessMode & O_WRONLY))
+	if (!(fcbArray[fd].accessMode | O_RDWR || fcbArray[fd].accessMode | O_WRONLY))
 	{
 		printf("[ERROR] does not have access to write!\n");
 		return -1;
@@ -281,7 +275,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		int LBAindex = allocateFreeSpace(fcbArray[fd].fi->blockCount + mfs_extend_block_count);
 		char *extendBuffer = malloc((fcbArray[fd].fi->blockCount + mfs_extend_block_count) * mfs_blockSize);
 		LBAread(extendBuffer, fcbArray[fd].fi->blockCount, fcbArray[fd].fi->location);
-		printf("[debug] after lba read's buffer: %s\n", extendBuffer);
+		// printf("[debug] after lba read's buffer: %s\n", extendBuffer);
 
 		int mallocSize = sizeof(DE) * mfs_defaultDECount;
 		int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
@@ -323,7 +317,6 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 		printf("[debug] print out DE info\n");
 		printDEInfo(tempWorkingDir[DEindex]);
-		printf("[debug] extended the file and move to new LBA location");
 
 		free(tempWorkingDir);
 		tempWorkingDir = NULL;
@@ -335,7 +328,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 
 	//3 calculate the bufRemains
 	bufRemains = B_CHUNK_SIZE - fcbArray[fd].bufIndex;
-	printf("[debug] bufRemains: %d\n", bufRemains);
+	// printf("[debug] bufRemains: %d\n", bufRemains);
 
 	//4 calculate part1, 2, 3
 	if (count <= bufRemains)
@@ -353,7 +346,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		part3 = part3 - part2;
 	}
 
-	printf("[debug] part1: %d & part2: %d & part3: %d\n", part1, part2, part3);
+	// printf("[debug] part1: %d & part2: %d & part3: %d\n", part1, part2, part3);
 
 	//5 part1
 	if (part1 > 0)
@@ -361,13 +354,14 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		printf("[debug] inside part 1\n");
 		memcpy(fcbArray[fd].buf, buffer, part1);
 		fcbArray[fd].bufIndex += part1;
-		printf("[debug] my current buffer: %s\n", fcbArray[fd].buf);
-		if (fcbArray[fd].bufIndex == fcbArray[fd].fi->actualSize - 1)
+		// printf("[debug] my current buffer: %s\n", fcbArray[fd].buf);
+		if (fcbArray[fd].bufIndex == B_CHUNK_SIZE - 1)
 		{
-			printf("[debug] block is full, need to flush!\n");
+			// printf("[debug] block is full, need to flush!\n");
 			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 			fcbArray[fd].currentBlock += 1;
 			fcbArray[fd].bufIndex = 0;
+			fcbArray[fd].fi->actualSize += B_CHUNK_SIZE;
 		}
 	}
 
@@ -375,9 +369,9 @@ int b_write(b_io_fd fd, char *buffer, int count)
 	if (part2 > 0)
 	{
 		printf("[debug] inside part 2\n");
-		bytesWrite = LBAwrite(buffer + part1, transferBlocks, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
+		LBAwrite(buffer + part1, transferBlocks, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 		fcbArray[fd].currentBlock += transferBlocks;
-		part2 = bytesWrite;
+		fcbArray[fd].fi->actualSize += part2;
 	}
 
 	//7 part3
@@ -386,20 +380,23 @@ int b_write(b_io_fd fd, char *buffer, int count)
 		printf("[debug] inside part 3\n");
 		memcpy(fcbArray[fd].buf, buffer + part1 + part2, part3);
 		fcbArray[fd].bufIndex += part3;
-		if (fcbArray[fd].bufIndex == fcbArray[fd].fi->actualSize - 1)
+		if (fcbArray[fd].bufIndex == B_CHUNK_SIZE - 1)
 		{
-			printf("[debug] block is full\n");
-			bytesWrite = LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
+			// printf("[debug] block is full\n");
+			LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
+			fcbArray[fd].fi->actualSize += B_CHUNK_SIZE;
 		}
 	}
 
 	//8 calculate returned byte
 	bytesReturned = part1 + part2 + part3;
-	printf("[debug] bytesReturned: %d\n", bytesReturned);
+	// printf("[debug] bytesReturned: %d\n", bytesReturned);
+	printf("[debug] printout DE info\n");
+	printDEInfo(*fcbArray[fd].fi);
 
 	printf("---------- END OF THE b_write() ----------\n");
 
-	return (bytesReturned); //Change this
+	return (0); //Change this
 }
 
 // Interface to read a buffer
@@ -424,6 +421,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 int b_read(b_io_fd fd, char *buffer, int count)
 {
 	printf("---------- INSIDE OF THE b_read() ----------\n");
+	printf("[debug] count: %d\n", count);
 
 	int bufRemains, delieveredBytes, bytesRead, bytesReturned;
 	int part1, part2, part3, transferBlocks;
@@ -438,7 +436,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 	}
 
 	//1 check if the access mode has read
-	if (!(fcbArray[fd].accessMode & O_RDONLY || fcbArray[fd].accessMode & O_RDWR))
+	if (!(fcbArray[fd].accessMode | O_RDONLY || fcbArray[fd].accessMode | O_RDWR))
 	{
 		printf("[ERROR] does not have access to read!\n");
 		return -1;
@@ -464,6 +462,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 		}
 	}
 
+	printf("[debug] count: %d\n", count);
 	//6 calculate part1, 2, 3
 	if (count <= bufRemains)
 	{
@@ -498,6 +497,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 		printf("[debug] inside part 2\n");
 		bytesRead = LBAread(buffer + part1, transferBlocks, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 		fcbArray[fd].currentBlock += transferBlocks;
+		bytesRead = bytesRead * B_CHUNK_SIZE;
 		part2 = bytesRead;
 		printf("[debug] bufIndex: %d\n", fcbArray[fd].bufIndex);
 		printf("[debug] currentBlock: %d\n", fcbArray[fd].currentBlock);
@@ -508,11 +508,14 @@ int b_read(b_io_fd fd, char *buffer, int count)
 	if (part3 > 0)
 	{
 		printf("[debug] inside part 3\n");
-
+		printf("[debug] before doing LBAread, my buffer: %s\n", fcbArray[fd].buf);
 		bytesRead = LBAread(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
+		bytesRead = bytesRead * mfs_blockSize;
 		fcbArray[fd].currentBlock += 1;
 		fcbArray[fd].bufIndex = 0;
 		fcbArray[fd].bufLen = bytesRead;
+		printf("[debug] bytesRead: %d\n", bytesRead); //TODO
+		printf("[debug] our current buffer after LBAread: %s\n", fcbArray[fd].buf);
 		if (bytesRead < part3)
 		{
 			part3 = bytesRead;
@@ -531,6 +534,8 @@ int b_read(b_io_fd fd, char *buffer, int count)
 
 	//10 calculate returned bytes
 	bytesReturned = part1 + part2 + part3;
+	printf("[debug] printout DE info\n");
+	printDEInfo(*fcbArray[fd].fi);
 
 	printf("---------- END OF THE b_read() ----------\n");
 
@@ -540,7 +545,61 @@ int b_read(b_io_fd fd, char *buffer, int count)
 // Interface to Close the file
 void b_close(b_io_fd fd)
 {
-	printf("---------- END OF THE b_close() ----------\n");
+	printf("---------- INSIDE OF THE b_close() ----------\n");
+	// printf("[debug] bufIndex: %d\n", fcbArray[fd].bufIndex);
+	printf("[debug] printout DE info\n");
+	printDEInfo(*fcbArray[fd].fi);
+
+	int tempActualSize;
+	if (fcbArray[fd].bufIndex < B_CHUNK_SIZE && fcbArray[fd].accessMode | O_WRONLY)
+	{
+		printf("[debug] doing the last LBAwrite with buf: %s\n", fcbArray[fd].buf);
+		LBAwrite(fcbArray[fd].buf, 1, fcbArray[fd].fi->location + fcbArray[fd].currentBlock);
+		fcbArray[fd].fi->actualSize += fcbArray[fd].bufIndex;
+		tempActualSize = fcbArray[fd].fi->actualSize;
+		printf("[debug] actual size is %d\n", fcbArray[fd].fi->actualSize);
+	}
+
+	int mallocSize = sizeof(DE) * mfs_defaultDECount;
+	int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+	mallocSize = numOfBlockNeeded * mfs_blockSize;
+	DE *tempWorkingDir = malloc(mallocSize);
+	char *lastToken = malloc(256);
+	bool valid = pathParser(fcbArray[fd].fi->name, EXIST_FILE, tempWorkingDir, lastToken);
+
+	if (!valid)
+	{
+		printf("[ERROR] b_close: invalid path\n");
+		free(fcbArray[fd].buf);
+		fcbArray[fd].buf = NULL;
+		fcbArray[fd].fi = NULL;
+		return;
+	}
+	int DEindex = -1;
+	for (int i = 2; i < mfs_defaultDECount; i++)
+	{
+		if (strcmp(tempWorkingDir[i].name, lastToken) == 0)
+		{
+			DEindex = i;
+			break;
+		}
+	}
+
+	if (DEindex == -1)
+	{
+		printf("[ERROR] b_close: cannot find DEindex\n");
+		free(fcbArray[fd].buf);
+		fcbArray[fd].buf = NULL;
+		fcbArray[fd].fi = NULL;
+		return;
+	}
+
+	printf("[debug] !actual size is %d\n", tempActualSize);
+	tempWorkingDir[DEindex].actualSize = tempActualSize; //TODO
+	printf("[debug] print DE info\n");
+	printDEInfo(tempWorkingDir[DEindex]);
+	LBAwrite(tempWorkingDir, tempWorkingDir[0].blockCount, tempWorkingDir[0].location);
+
 	free(fcbArray[fd].buf);
 	fcbArray[fd].buf = NULL;
 	fcbArray[fd].fi = NULL;
