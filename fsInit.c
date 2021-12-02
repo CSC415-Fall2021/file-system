@@ -62,15 +62,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize)
 
 		//init free space
 		int bitMapLocation = initFreeSpace(mfs_vcb);
-		printf("[debug] bitMapLocation starts at %d\n", bitMapLocation);
+		// printf("[debug] bitMapLocation starts at %d\n", bitMapLocation);
 
 		//init root
 		int rootLocation = createDir(0); //not sure bout passing in 0...
-		printf("[debug] rootLocation starts at %d\n", rootLocation);
+		// printf("[debug] rootLocation starts at %d\n", rootLocation);
 
 		//set the root as current working directory
 		mfs_cwd_location = rootLocation;
-		printf("[debug] cwd location: %d\n", mfs_cwd_location);
+		// printf("[debug] cwd location: %d\n", mfs_cwd_location);
 
 		//init rest of the data of VCB
 		mfs_vcb->rootSize = mfs_defaultDECount * sizeof(DE);
