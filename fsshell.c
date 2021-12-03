@@ -1,9 +1,9 @@
 /**************************************************************
-* Class:  CSC-415-02&03  Fall 2021
-* Names: Tun-Ni Chiang, Jiasheng Li, Christopher Ling, Shixin Wang
-* Student IDs: 921458769, 916473043, 918266861, 918663491
-* GitHub Name: tunni-chiang, jiasheng-li, dslayer1392, uyguyguy
-* Group Name: Bug Master
+* Class:  CSC-415-0# - Fall 2021
+* Names: 
+* Student IDs:
+* GitHub Name:
+* Group Name:
 * Project: Basic File System
 *
 * File: fsShell.c
@@ -26,6 +26,8 @@
 
 #include "fsLow.h"
 #include "mfs.h"
+#include "b_io.h"
+#include "fsDir.h"
 
 #define SINGLE_QUOTE 0x27
 #define DOUBLE_QUOTE 0x22
@@ -33,15 +35,15 @@
 #define DIRMAX_LEN 4096
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
-#define CMDLS_ON 0
-#define CMDCP_ON 0
-#define CMDMV_ON 0
-#define CMDMD_ON 0
-#define CMDRM_ON 0
-#define CMDCP2L_ON 0
-#define CMDCP2FS_ON 0
-#define CMDCD_ON 0
-#define CMDPWD_ON 0
+#define CMDLS_ON 1
+#define CMDCP_ON 1
+#define CMDMV_ON 1
+#define CMDMD_ON 1
+#define CMDRM_ON 1
+#define CMDCP2L_ON 1
+#define CMDCP2FS_ON 1
+#define CMDCD_ON 1
+#define CMDPWD_ON 1
 
 typedef struct dispatch_t
 {
@@ -219,7 +221,6 @@ int cmd_ls(int argcnt, char *argvec[])
 /****************************************************
 *  Copy file commmand
 ****************************************************/
-
 int cmd_cp(int argcnt, char *argvec[])
 {
 #if (CMDCP_ON == 1)
@@ -246,7 +247,6 @@ int cmd_cp(int argcnt, char *argvec[])
 		printf("Usage: cp srcfile [destfile]\n");
 		return (-1);
 	}
-
 	testfs_src_fd = b_open(src, O_RDONLY);
 	testfs_dest_fd = b_open(dest, O_WRONLY | O_CREAT | O_TRUNC);
 	do
@@ -266,8 +266,106 @@ int cmd_cp(int argcnt, char *argvec[])
 int cmd_mv(int argcnt, char *argvec[])
 {
 #if (CMDMV_ON == 1)
-	return -99;
 	// **** TODO ****  For you to implement
+
+	//1. check if argcnt is more than three
+	if (argcnt != 3)
+	{
+		printf("[ERROR] cmd_mv: invalid arguments\n");
+		return 0;
+	}
+
+	//2. create two tempWorkingDir and two lastToken
+	int mallocSize = sizeof(DE) * mfs_defaultDECount;
+	int numOfBlockNeeded = (mallocSize / mfs_blockSize) + 1;
+	mallocSize = numOfBlockNeeded * mfs_blockSize;
+	DE *tempWorkingDir1 = malloc(mallocSize);
+	char *lastToken1 = malloc(256);
+	DE *tempWorkingDir2 = malloc(mallocSize);
+	char *lastToken2 = malloc(256);
+
+	//3. pathParser for first argument with EXIST_DIR | EXIST_FILE
+	bool valid = pathParser(argvec[1], EXIST_DIR | EXIST_FILE, tempWorkingDir1, lastToken1);
+
+	//if invalid, print error message and return
+	if (!valid)
+	{
+		printf("[ERROR] cmd_mv: invalid argument 1\n");
+		return 0;
+	}
+
+	//4. pathParser for second argument with EXIST_DIR | EXIST_FILE
+	valid = pathParser(argvec[2], EXIST_DIR | EXIST_FILE, tempWorkingDir2, lastToken2);
+
+	int DEindex = -1;
+	for (int i = 2; i < mfs_defaultDECount; i++)
+	{
+		if (strcmp(tempWorkingDir1[i].name, lastToken1) == 0)
+		{
+			DEindex = i;
+			break;
+		}
+	}
+
+	if (DEindex == -1)
+	{
+		printf("[ERROR] cmd_mv: cannot find DE\n");
+		return 0;
+	}
+
+	//if invalid -> rename the file
+	if (!valid)
+	{
+		strcpy(tempWorkingDir1[DEindex].name, lastToken2);
+	}
+
+	//if valid -> change the location
+	if (valid)
+	{
+		int DEindex2 = -1;
+		for (int i = 2; i < mfs_defaultDECount; i++)
+		{
+			if (strcmp(tempWorkingDir2[i].name, lastToken2) == 0)
+			{
+				DEindex2 = i;
+				break;
+			}
+		}
+
+		if (DEindex2 == -1)
+		{
+			printf("[ERROR] cmd_mv: cannot find DE\n");
+			return 0;
+		}
+
+		LBAread(tempWorkingDir2, tempWorkingDir2[DEindex2].blockCount, tempWorkingDir2[DEindex2].location);
+		DEindex2 = -1;
+		for (int i = 2; i < mfs_defaultDECount; i++)
+		{
+			if (strcmp(tempWorkingDir2[i].name, "\0") == 0)
+			{
+				DEindex2 = i;
+				break;
+			}
+		}
+
+		if (DEindex2 == -1)
+		{
+			printf("[ERROR] cmd_mv: cannot find DE\n");
+			return 0;
+		}
+
+		tempWorkingDir2[DEindex2] = tempWorkingDir1[DEindex];
+		fs_delete(lastToken1);
+	}
+
+	LBAwrite(tempWorkingDir1, tempWorkingDir1[0].blockCount, tempWorkingDir1[0].location);
+	LBAwrite(tempWorkingDir2, tempWorkingDir2[0].blockCount, tempWorkingDir2[0].location);
+
+	//5. free tempWorkingDir1&2 and lastToken1&2
+	free(tempWorkingDir1);
+	tempWorkingDir1 = NULL;
+
 #endif
 	return 0;
 }
@@ -352,10 +450,11 @@ int cmd_cp2l(int argcnt, char *argvec[])
 	}
 
 	testfs_fd = b_open(src, O_RDONLY);
-	linux_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC);
+	linux_fd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
 	do
 	{
 		readcnt = b_read(testfs_fd, buf, BUFFERLEN);
+		//printf("[debug] return: %d & buf: %s\n", readcnt, buf);
 		write(linux_fd, buf, readcnt);
 	} while (readcnt == BUFFERLEN);
 	b_close(testfs_fd);

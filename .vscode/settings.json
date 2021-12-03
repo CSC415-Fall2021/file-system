@@ -2,6 +2,7 @@
     "files.associations": {
         "fsfree.h": "c",
         "cstdint": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "fslow.h": "c"
     }
 }

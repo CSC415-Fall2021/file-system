@@ -56,24 +56,17 @@ typedef struct
 	unsigned short d_reclen;		 /*length of this record */
 	unsigned short dirEntryPosition; /*which directory entry position, like file pos */
 	uint64_t directoryStartLocation; /*Starting LBA of directory */
+	unsigned char fileType;
+	char d_name[256];
 } fdDir;
-
-typedef struct
-{
-	int blockSize;
-	int totalOfBlock;
-	unsigned char *bitMap;
-	int location;
-	int lastAllocBlock; //temp
-	int usedCount;		//for our purpose
-	int freeCount;		//for our purpose
-} freeSpaceManager;
 
 typedef struct
 {
 	char name[64];
 	int size;
-	int pointingLocation;
+	int actualSize;
+	int blockCount;
+	int location;
 	bool isDir;
 	time_t createTime;
 	time_t lastModTime;
@@ -93,6 +86,10 @@ typedef struct
 	int nextFreeBlock;
 } VCB;
 
+int mfs_blockSize;
+VCB *mfs_vcb;
+int mfs_cwd_location;
+
 // Key directory functions
 int fs_mkdir(const char *pathname, mode_t mode);
 int fs_rmdir(const char *pathname);
@@ -107,7 +104,7 @@ char *fs_getcwd(char *buf, size_t size);
 int fs_setcwd(char *buf);	   //linux chdir
 int fs_isFile(char *path);	   //return 1 if file, 0 otherwise
 int fs_isDir(char *path);	   //return 1 if directory, 0 otherwise
-int fs_delete(char *filename); //removes a file
+int fs_delete(char *filename); //removes a file return the deleted file's location, -1 means failed
 
 // This is the strucutre that is filled in from a call to fs_stat
 struct fs_stat
