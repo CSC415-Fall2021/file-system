@@ -426,7 +426,7 @@ int b_write(b_io_fd fd, char *buffer, int count)
 //  +-------------+------------------------------------------------+--------+
 int b_read(b_io_fd fd, char *buffer, int count)
 {
-	printf("---------- INSIDE OF THE b_read() ----------\n");
+	//printf("---------- INSIDE OF THE b_read() ----------\n");
 	// printf("[debug] count: %d\n", count);
 
 	int bufRemains, delieveredBytes, bytesRead, bytesReturned;
@@ -485,40 +485,40 @@ int b_read(b_io_fd fd, char *buffer, int count)
 		part3 = part3 - part2;
 	}
 
-	printf("[debug] part1: %d & part2: %d & part3: %d\n", part1, part2, part3);
+	//printf("[debug] part1: %d & part2: %d & part3: %d\n", part1, part2, part3);
 
 	//7 part 1
 	if (part1 > 0)
 	{
-		printf("[debug] inside part 1\n");
+		//printf("[debug] inside part 1\n");
 		// printf("[debug] bufIndex: %d\n", fcbArray[fd].bufIndex);
 		memcpy(buffer, fcbArray[fd].buf + fcbArray[fd].bufIndex, part1);
 		fcbArray[fd].bufIndex += part1;
-		printf("[debug] user's buf: %s\n", buffer);
+		//printf("[debug] user's buf: %s\n", buffer);
 	}
 
 	//8 part 2
 	if (part2 > 0)
 	{
-		printf("[debug] inside part 2\n");
+		//printf("[debug] inside part 2\n");
+		//printf("[debug] bufLength: %ld & part1: %d\n", strlen(buffer), part1);
 		bytesRead = LBAread(buffer + part1, transferBlocks, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 		fcbArray[fd].currentBlock += transferBlocks;
 		bytesRead = bytesRead * B_CHUNK_SIZE;
 		part2 = bytesRead;
-		printf("[debug] user's buf: %s\n", buffer);
+		//printf("[debug] user's buf: %s\n", buffer);
 	}
 
 	//9 part 3
 	if (part3 > 0)
 	{
-		printf("[debug] inside part 3\n");
+		//printf("[debug] inside part 3\n");
 		bytesRead = LBAread(fcbArray[fd].buf, 1, fcbArray[fd].currentBlock + fcbArray[fd].fi->location);
 		bytesRead = bytesRead * mfs_blockSize;
 		fcbArray[fd].currentBlock += 1;
 		fcbArray[fd].bufIndex = 0;
 		fcbArray[fd].bufLen = bytesRead;
-		printf("[debug] our current buffer after LBAread: %s\n", fcbArray[fd].buf);
-		printf("[debug] bytesRead: %d\n", bytesRead);
+		//printf("[debug] bytesRead: %d\n", bytesRead);
 		if (bytesRead < part3)
 		{
 			part3 = bytesRead;
@@ -526,11 +526,13 @@ int b_read(b_io_fd fd, char *buffer, int count)
 
 		if (part3 > 0)
 		{
-			printf("[debug] part1 + part2: %d\n", part1 + part2);
-			printf("[debug] part3: %d\n", part3);
-			memcpy(buffer + part1 + part2, fcbArray[fd].buf, part3);
+			//printf("[debug] part1 + part2: %d\n", part1 + part2);
+			//printf("[debug] part3: %d\n", part3);
+			//printf("[debug] our current buffer after LBAread: %s\n", fcbArray[fd].buf);
+			//printf("[debug] buffer length: %ld\n", strlen(buffer));
+			memcpy(buffer + part1 + part2, fcbArray[fd].buf + fcbArray[fd].bufIndex, part3);
 			fcbArray[fd].bufIndex += part3;
-			printf("[debug] user's buf: %s\n", buffer);
+			//printf("[debug] user's buf: %s\n", buffer);
 		}
 	}
 
@@ -539,7 +541,7 @@ int b_read(b_io_fd fd, char *buffer, int count)
 	// printf("[debug] printout DE info\n");
 	// printDEInfo(*fcbArray[fd].fi);
 
-	printf("---------- END OF THE b_read() ----------\n");
+	//printf("---------- END OF THE b_read() ----------\n");
 
 	return (bytesReturned); //Change this
 }
