@@ -23,6 +23,9 @@
 #include "fsFree.h"
 #include "fsDir.h"
 
+#define rootDECount 50 //number of blocks root contains
+
+
 //since we are using it in different functions, we declared it globally
 VCB *mfs_vcb;
 
